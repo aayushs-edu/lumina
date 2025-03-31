@@ -1,2 +1,2 @@
 # lumina
-Lumina - shedding light on hidden inequalities
+Lumina - Shedding Light on Hidden Inequalities
