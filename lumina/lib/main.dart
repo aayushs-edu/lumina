@@ -5,6 +5,7 @@ import 'todays_topic_page.dart';
 import 'post_story_page.dart';
 import 'create_lumina_post_page.dart';
 import 'data_center_page.dart';
+import 'package:syncfusion_flutter_maps/maps.dart';
 
 void main() {
   runApp(LuminaApp());
@@ -243,7 +244,6 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: 20),
                       // Subtitle
                       Center(
                         child: Text(
@@ -422,24 +422,41 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class WorldMap extends StatelessWidget {
+class WorldMap extends StatefulWidget {
+  @override
+  _WorldMapState createState() => _WorldMapState();
+}
+
+class _WorldMapState extends State<WorldMap> {
+  late MapShapeSource _mapSource;
+
+  @override
+  void initState() {
+    _mapSource = MapShapeSource.asset(
+      'assets/world_map.json',
+      shapeDataField: 'name',
+    );
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 400,
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
       ),
-      child: Center(
-        child: Text(
-          "Interactive World Map Coming Soon",
-          style: TextStyle(color: Colors.grey[600], fontSize: 16),
-        ),
-      ),
+      child: SfMaps(layers: [MapShapeLayer(source: _mapSource)]),
     );
   }
+}
+
+class MapData {
+  MapData(this.name, this.color);
+
+  String name;
+  Color color;
 }
 
 class Particle {
@@ -449,7 +466,11 @@ class Particle {
     required this.color,
     required this.size,
     required this.initialDelay,
-  });
+  }) {
+    // Initialize random phase for size and opacity fluctuations
+    sizePhase = random.nextDouble() * 2 * math.pi;
+    opacityPhase = random.nextDouble() * 2 * math.pi;
+  }
 
   Offset position;
   Offset speed;
@@ -460,6 +481,9 @@ class Particle {
   bool hasStarted = false;
   double angle = 0.0;
   double speedMultiplier = 1.0;
+  late double sizePhase; // Phase for size fluctuation
+  late double opacityPhase; // Phase for opacity fluctuation
+  final random = math.Random();
 
   void update(Size screenSize, double time) {
     if (time < initialDelay) return;
@@ -469,43 +493,58 @@ class Particle {
       opacity = 0.0;
     }
 
-    // Faster fade in
+    // Base fade in
     if (opacity < 1.0) {
-      opacity = (opacity + 0.08).clamp(0.0, 1.0);
+      opacity = (opacity + 0.15).clamp(0.0, 1.0);
     }
 
+    // Add size fluctuation
+    final sizeFluctuation = math.sin(time * 2 + sizePhase) * 0.3 + 1.0;
+    final currentSize = size * sizeFluctuation;
+
+    // Add opacity fluctuation
+    final opacityFluctuation = math.sin(time * 1.5 + opacityPhase) * 0.2 + 0.8;
+    final currentOpacity = opacity * opacityFluctuation;
+
     // Add some wobble to the movement
-    angle += (math.Random().nextDouble() - 0.5) * 0.2;
+    angle += (random.nextDouble() - 0.5) * 0.2;
     final wobbleX = math.sin(angle) * 0.5;
     final wobbleY = math.cos(angle) * 0.5;
 
+    // Calculate speed decay after 15 seconds
+    if (time > 15) {
+      speedMultiplier = math.max(0.3, 1.0 - (time - 15) / 15);
+    }
+
+    // Apply movement with speed multiplier
     position += Offset(
-      (speed.dx + wobbleX) * speedMultiplier,
-      (speed.dy + wobbleY) * speedMultiplier,
+      (speed.dx + wobbleX) * speedMultiplier * 0.3,
+      (speed.dy + wobbleY) * speedMultiplier * 0.3,
     );
 
-    // Calculate speed decay after 8 seconds (reduced from 15)
-    if (time > 8) {
-      speedMultiplier = math.max(
-        0.1,
-        1.0 - (time - 8) / 3,
-      ); // Decay over 3 seconds to 10% speed
+    // Bounce off screen edges with original bounce physics
+    if (position.dx < 0) {
+      position = Offset(0, position.dy);
+      speed = Offset(-speed.dx * 0.9, speed.dy + (random.nextDouble() - 0.5));
+    } else if (position.dx > screenSize.width) {
+      position = Offset(screenSize.width, position.dy);
+      speed = Offset(-speed.dx * 0.9, speed.dy + (random.nextDouble() - 0.5));
+    }
+    if (position.dy < 0) {
+      position = Offset(position.dx, 0);
+      speed = Offset(speed.dx + (random.nextDouble() - 0.5), -speed.dy * 0.9);
+    } else if (position.dy > screenSize.height) {
+      position = Offset(position.dx, screenSize.height);
+      speed = Offset(speed.dx + (random.nextDouble() - 0.5), -speed.dy * 0.9);
     }
 
-    // Bounce off screen edges with random angle change
-    if (position.dx < 0 || position.dx > screenSize.width) {
-      speed = Offset(
-        -speed.dx * 0.9,
-        speed.dy + (math.Random().nextDouble() - 0.5),
-      );
-    }
-    if (position.dy < 0 || position.dy > screenSize.height) {
-      speed = Offset(
-        speed.dx + (math.Random().nextDouble() - 0.5),
-        -speed.dy * 0.9,
-      );
-    }
+    // Update the particle's current size and opacity for rendering
+    this.currentSize = currentSize;
+    this.currentOpacity = currentOpacity;
   }
+
+  double currentSize = 0.0;
+  double currentOpacity = 0.0;
 }
 
 class ParticleBackground extends StatefulWidget {
@@ -530,12 +569,12 @@ class _ParticleBackgroundState extends State<ParticleBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 15), // Reduced from 30 to 15 seconds
+      duration: const Duration(seconds: 30),
     )..repeat();
     particles = [];
 
     // Initialize particles with shorter delay
-    Future.delayed(Duration(milliseconds: 200), () {
+    Future.delayed(Duration(milliseconds: 100), () {
       _getTextPosition();
     });
   }
@@ -582,21 +621,15 @@ class _ParticleBackgroundState extends State<ParticleBackground>
       const Color.fromRGBO(255, 145, 0, 0.7),
     ];
 
-    // Generate a random point within the text bounds
-    final startX = textBounds!.left + random.nextDouble() * textBounds!.width;
-    final startY = textBounds!.top + random.nextDouble() * textBounds!.height;
+    // Start all particles from the center of the text
+    final startX = textBounds!.left + textBounds!.width / 2;
+    final startY = textBounds!.top + textBounds!.height / 2;
 
-    // Calculate angle for radial movement with more randomness
-    final baseAngle = math.atan2(
-      startY - (textBounds!.top + textBounds!.height / 2),
-      startX - (textBounds!.left + textBounds!.width / 2),
-    );
+    // Calculate random angle for radial movement
+    final randomAngle = random.nextDouble() * 2 * math.pi;
 
-    // Add more random angle deviation
-    final randomAngle = baseAngle + (random.nextDouble() - 0.5) * math.pi;
-
-    // Increased speed range
-    final speed = 0.8 + random.nextDouble() * 1.5; // Faster initial speed
+    // Much faster initial speed
+    final speed = 2.0 + random.nextDouble() * 3.0;
     final velocityX = math.cos(randomAngle) * speed;
     final velocityY = math.sin(randomAngle) * speed;
 
@@ -604,10 +637,8 @@ class _ParticleBackgroundState extends State<ParticleBackground>
       position: Offset(startX, startY),
       speed: Offset(velocityX, velocityY),
       color: colors[random.nextInt(colors.length)],
-      size:
-          random.nextDouble() * 8 +
-          2, // Slightly smaller particles for faster feel
-      initialDelay: random.nextDouble() * 0.5, // Reduced delay for faster start
+      size: random.nextDouble() * 15 + 1,
+      initialDelay: random.nextDouble() * 0.2,
     );
   }
 
@@ -674,14 +705,14 @@ class ParticlePainter extends CustomPainter {
     for (var particle in particles) {
       final paint =
           Paint()
-            ..color = particle.color.withOpacity(particle.opacity * 0.7)
+            ..color = particle.color.withOpacity(particle.currentOpacity * 0.7)
             ..style = PaintingStyle.fill
             ..maskFilter = MaskFilter.blur(
               BlurStyle.normal,
-              particle.size / 3,
-            ); // Add slight blur for glow effect
+              particle.currentSize / 3,
+            );
 
-      canvas.drawCircle(particle.position, particle.size, paint);
+      canvas.drawCircle(particle.position, particle.currentSize, paint);
     }
   }
 
