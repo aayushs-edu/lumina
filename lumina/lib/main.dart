@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lumina/world_map.dart';
 import 'dart:math' as math;
 import 'todays_topic_page.dart';
 import 'post_story_page.dart';
 import 'create_lumina_post_page.dart';
 import 'data_center_page.dart';
-import 'package:syncfusion_flutter_maps/maps.dart';
 
 void main() {
   runApp(LuminaApp());
@@ -47,8 +47,31 @@ class LuminaApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final GlobalKey luminaTextKey = GlobalKey();
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _gradientController;
+
+  @override
+  void initState() {
+    super.initState();
+    _gradientController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _gradientController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,8 +192,6 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
-                  // Sign In button
                 ],
               ),
             ),
@@ -179,7 +200,7 @@ class HomePage extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          ParticleBackground(luminaTextKey: luminaTextKey),
+          ParticleBackground(luminaTextKey: widget.luminaTextKey),
           Column(
             children: [
               Expanded(
@@ -187,61 +208,71 @@ class HomePage extends StatelessWidget {
                   child: Column(
                     children: [
                       // Initial space to center the text vertically
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height / 2 - 100,
-                      ),
+                      SizedBox(height: MediaQuery.of(context).size.height / 3),
                       // Lumina text
                       Center(
-                        child: ShaderMask(
-                          shaderCallback:
-                              (bounds) => LinearGradient(
-                                colors: [
-                                  const Color.fromARGB(238, 255, 136, 0),
-                                  const Color.fromARGB(255, 255, 20, 20),
-                                ],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ).createShader(bounds),
-                          child: Text(
-                            "lumina",
-                            key: luminaTextKey,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineLarge?.copyWith(
-                              shadows: [
-                                Shadow(
-                                  color: const Color.fromARGB(
-                                    238,
-                                    255,
-                                    136,
-                                    0,
-                                  ).withOpacity(0.4),
-                                  blurRadius: 60,
-                                  offset: Offset(0, 0),
-                                ),
-                                Shadow(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    255,
-                                    20,
-                                    20,
-                                  ).withOpacity(0.3),
-                                  blurRadius: 120,
-                                  offset: Offset(0, 0),
-                                ),
-                                Shadow(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    255,
-                                    20,
-                                    20,
-                                  ).withOpacity(0.15),
-                                  blurRadius: 180,
-                                  offset: Offset(0, 0),
-                                ),
+                        child: AnimatedBuilder(
+                          animation: _gradientController,
+                          builder: (context, child) {
+                            final progress = _gradientController.value;
+                            final gradient = LinearGradient(
+                              colors: [
+                                const Color.fromARGB(238, 255, 136, 0),
+                                const Color.fromARGB(255, 255, 20, 20),
+                                const Color.fromARGB(238, 255, 136, 0),
                               ],
-                            ),
-                          ),
+                              stops:
+                                  [progress - 0.5, progress, progress + 0.5]
+                                      .map((stop) => stop.clamp(0.0, 1.0))
+                                      .toList(),
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            );
+                            return ShaderMask(
+                              shaderCallback:
+                                  (bounds) => gradient.createShader(bounds),
+                              child: Text(
+                                "lumina",
+                                key: widget.luminaTextKey,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineLarge?.copyWith(
+                                  shadows: [
+                                    Shadow(
+                                      color: const Color.fromARGB(
+                                        238,
+                                        255,
+                                        136,
+                                        0,
+                                      ).withOpacity(0.4),
+                                      blurRadius: 60,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    Shadow(
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        20,
+                                        20,
+                                      ).withOpacity(0.3),
+                                      blurRadius: 120,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    Shadow(
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        20,
+                                        20,
+                                      ).withOpacity(0.15),
+                                      blurRadius: 180,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       // Subtitle
@@ -256,96 +287,183 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: 60),
+                      SizedBox(height: 100),
                       // Theme panel
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        padding: EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 20,
-                              spreadRadius: 0,
-                            ),
-                          ],
-                          backgroundBlendMode: BlendMode.overlay,
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              "Today's Theme",
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              "Gender Inequality",
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: 42,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: 40),
-
-                      // World Map Panel
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        padding: EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[100]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
-                              blurRadius: 20,
-                              spreadRadius: 0,
-                            ),
-                          ],
-                          backgroundBlendMode: BlendMode.overlay,
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              "Global Impact Map",
-                              style: TextStyle(
-                                color: Colors.black87.withOpacity(0.8),
-                                fontSize: 24,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(height: 24),
-                            ClipRRect(
+                      Center(
+                        child: Container(
+                          constraints: BoxConstraints(maxWidth: 800),
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              child: WorldMap(),
+                              border: Border.all(
+                                color: const Color.fromARGB(
+                                  255,
+                                  255,
+                                  20,
+                                  20,
+                                ).withOpacity(0.3),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    255,
+                                    20,
+                                    20,
+                                  ).withOpacity(0.1),
+                                  blurRadius: 2,
+                                  spreadRadius: 0,
+                                  offset: Offset(0, 0),
+                                ),
+                                BoxShadow(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    255,
+                                    20,
+                                    20,
+                                  ).withOpacity(0.15),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                  offset: Offset(0, 0),
+                                ),
+                                BoxShadow(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    255,
+                                    20,
+                                    20,
+                                  ).withOpacity(0.1),
+                                  blurRadius: 20,
+                                  spreadRadius: 0,
+                                  offset: Offset(0, 0),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 40,
+                              vertical: 24,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Today's Theme",
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 16),
+                                Stack(
+                                  children: [
+                                    ShaderMask(
+                                      shaderCallback:
+                                          (bounds) => LinearGradient(
+                                            colors: [
+                                              const Color.fromARGB(
+                                                255,
+                                                255,
+                                                102,
+                                                0,
+                                              ),
+                                              const Color.fromARGB(
+                                                255,
+                                                255,
+                                                20,
+                                                20,
+                                              ),
+                                            ],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ).createShader(bounds),
+                                      child: Text(
+                                        "Gender Inequality",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 42,
+                                          fontWeight: FontWeight.w700,
+                                          shadows: [
+                                            Shadow(
+                                              color: const Color.fromARGB(
+                                                255,
+                                                255,
+                                                102,
+                                                0,
+                                              ).withOpacity(0.8),
+                                              blurRadius: 15,
+                                              offset: Offset(0, 0),
+                                            ),
+                                            Shadow(
+                                              color: const Color.fromARGB(
+                                                255,
+                                                255,
+                                                20,
+                                                20,
+                                              ).withOpacity(0.6),
+                                              blurRadius: 30,
+                                              offset: Offset(0, 0),
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 24),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Transform.rotate(
+                                      angle: -0.3,
+                                      child: Icon(
+                                        Icons.arrow_forward,
+                                        size: 24,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "View Stories",
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-
-                      SizedBox(height: 40),
-
-                      // Bottom navigation now part of scroll
+                      SizedBox(height: 100),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [InteractiveWorldMap()],
+                        ),
+                      ),
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+                          horizontal: 32,
+                          vertical: 20,
                         ),
                         child: Row(
                           children: [
-                            // Dark/Light mode toggle
                             Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
@@ -381,7 +499,6 @@ class HomePage extends StatelessWidget {
                               ),
                             ),
                             Spacer(),
-                            // Scroll to explore button
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -408,7 +525,6 @@ class HomePage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Add some padding at the bottom for better scrolling
                       SizedBox(height: 20),
                     ],
                   ),
@@ -420,43 +536,6 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-}
-
-class WorldMap extends StatefulWidget {
-  @override
-  _WorldMapState createState() => _WorldMapState();
-}
-
-class _WorldMapState extends State<WorldMap> {
-  late MapShapeSource _mapSource;
-
-  @override
-  void initState() {
-    _mapSource = MapShapeSource.asset(
-      'assets/world_map.json',
-      shapeDataField: 'name',
-    );
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 400,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: SfMaps(layers: [MapShapeLayer(source: _mapSource)]),
-    );
-  }
-}
-
-class MapData {
-  MapData(this.name, this.color);
-
-  String name;
-  Color color;
 }
 
 class Particle {
@@ -547,6 +626,34 @@ class Particle {
   double currentOpacity = 0.0;
 }
 
+class Ray {
+  final Offset start;
+  final double angle;
+  double length;
+  double opacity;
+  final Color color;
+  final double speed;
+  final double maxLength;
+
+  Ray({
+    required this.start,
+    required this.angle,
+    required this.color,
+    this.length = 0,
+    this.opacity = 1.0,
+    required this.speed,
+    required this.maxLength,
+  });
+
+  void update(double deltaTime) {
+    if (length < maxLength) {
+      length += speed * deltaTime;
+    } else {
+      opacity = (opacity - 0.02).clamp(0.0, 1.0);
+    }
+  }
+}
+
 class ParticleBackground extends StatefulWidget {
   final GlobalKey luminaTextKey;
 
@@ -603,8 +710,7 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 
     if (particles.isEmpty) {
       final particleCount =
-          (screenSize.width * screenSize.height / 8000)
-              .round(); // More particles
+          (screenSize.width * screenSize.height / 8000).round();
       particles = List.generate(
         particleCount,
         (index) => _createParticle(screenSize),
@@ -628,8 +734,8 @@ class _ParticleBackgroundState extends State<ParticleBackground>
     // Calculate random angle for radial movement
     final randomAngle = random.nextDouble() * 2 * math.pi;
 
-    // Much faster initial speed
-    final speed = 2.0 + random.nextDouble() * 3.0;
+    // Much faster initial speed (increased from 2.0-5.0 to 8.0-12.0)
+    final speed = 8.0 + random.nextDouble() * 20.0;
     final velocityX = math.cos(randomAngle) * speed;
     final velocityY = math.sin(randomAngle) * speed;
 
@@ -650,31 +756,28 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 
   @override
   Widget build(BuildContext context) {
-    // Try to initialize particles if not done yet
     if (particles.isEmpty) {
       _getTextPosition();
     }
 
     return Stack(
       children: [
-        // Radial gradient background
         Container(
           decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius: 1.2,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.center,
               colors: [
-                Colors.white,
-                const Color.fromRGBO(255, 236, 225, 1),
-                const Color.fromRGBO(255, 218, 198, 1),
                 const Color.fromRGBO(255, 204, 178, 0.7),
+                const Color.fromRGBO(255, 218, 198, 1),
+                const Color.fromRGBO(255, 236, 225, 1),
+                Colors.white,
               ],
               stops: [0.0, 0.3, 0.6, 1.0],
             ),
           ),
         ),
-        // Particles
-        if (particles.isNotEmpty)
+        if (particles.isNotEmpty && textBounds != null)
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -683,7 +786,19 @@ class _ParticleBackgroundState extends State<ParticleBackground>
                   MediaQuery.of(context).size,
                   _controller.value * 30,
                 );
+
+                // Calculate fade based on vertical position
+                double fadeThreshold = textBounds!.top;
+                if (particle.position.dy < fadeThreshold) {
+                  // Full opacity at top, fading to zero at threshold
+                  particle.currentOpacity = (1 -
+                          (particle.position.dy / fadeThreshold))
+                      .clamp(0.0, 1.0);
+                } else {
+                  particle.currentOpacity = 0.0;
+                }
               }
+
               return CustomPaint(
                 painter: ParticlePainter(particles: particles),
                 size: Size.infinite,
@@ -703,6 +818,8 @@ class ParticlePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var particle in particles) {
+      if (particle.currentOpacity <= 0) continue;
+
       final paint =
           Paint()
             ..color = particle.color.withOpacity(particle.currentOpacity * 0.7)
