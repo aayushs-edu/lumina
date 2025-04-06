@@ -4,7 +4,7 @@ import pycountry
 import openai
 import os
 
-# ----- CONFIGURATION -----
+# -----CONFIGURATION -----
 CSV_FILENAME = 'masterdb - Copy.csv'
 OUTPUT_FILENAME = 'masterdb_updated.csv'
 # Set to True if you want to use the AI fallback method (requires your OpenAI API key)
