@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'widgets/navbar.dart';
 
-class CreateLuminaPostPage extends StatelessWidget {
+class CreateLuminaPostPage extends StatefulWidget {
+  @override
+  _CreateLuminaPostPageState createState() => _CreateLuminaPostPageState();
+}
+
+class _CreateLuminaPostPageState extends State<CreateLuminaPostPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Create a Lumina Post", style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      extendBodyBehindAppBar: true,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: LuminaNavbar(currentPage: 'createLuminaPost'),
       ),
       body: Center(
         child: Padding(

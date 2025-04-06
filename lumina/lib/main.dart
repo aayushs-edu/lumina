@@ -6,8 +6,9 @@ import 'todays_topic_page.dart';
 import 'post_story_page.dart';
 import 'create_lumina_post_page.dart';
 import 'data_center_page.dart';
-import 'top_stories_dashboard.dart'; // filepath adjusted as needed
-import 'explore_page.dart'; // filepath adjusted as needed
+import 'explore_page.dart';
+import 'widgets/navbar.dart';
+import 'widgets/revolving_stories_dashboard.dart'; // Import the new widget
 
 void main() {
   runApp(LuminaApp());
@@ -44,7 +45,7 @@ class LuminaApp extends StatelessWidget {
         '/postStory': (context) => PostStoryPage(),
         '/createLuminaPost': (context) => CreateLuminaPostPage(),
         '/dataCenter': (context) => DataCenterPage(),
-        '/explore': (context) => ExplorePage(), // new route
+        '/explore': (context) => ExplorePage(),
       },
     );
   }
@@ -82,123 +83,8 @@ class _HomePageState extends State<HomePage>
       backgroundColor: Colors.white,
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: AppBar(
-          toolbarHeight: 60,
-          backgroundColor: Colors.transparent, // changed to transparent
-          elevation: 0,
-          title: Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white, // container background remains white
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // New first navigation item: Explore with attached auto_awesome icon
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: const Color.fromARGB(255, 255, 102, 0), // red-orange
-                      ),
-                      SizedBox(width: 4),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/explore');
-                        },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        ),
-                        child: Text(
-                          "Explore",
-                          style: TextStyle(
-                            color: const Color.fromARGB(255, 255, 102, 0), // red-orange
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(width: 16),
-                  // Existing navigation items follow
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/todaysTopic');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Today's Spotlight",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/postStory');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Post a Story",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/createLuminaPost');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Create a Lumina Post",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/dataCenter');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Data Center",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: LuminaNavbar(currentPage: 'home'),
       ),
       body: Stack(
         children: [
@@ -398,18 +284,8 @@ class _HomePageState extends State<HomePage>
                                           shaderCallback:
                                               (bounds) => LinearGradient(
                                                 colors: [
-                                                  const Color.fromARGB(
-                                                    255,
-                                                    255,
-                                                    102,
-                                                    0,
-                                                  ),
-                                                  const Color.fromARGB(
-                                                    255,
-                                                    255,
-                                                    20,
-                                                    20,
-                                                  ),
+                                                  Color(0xFFFFD700), // Bright Yellow
+                                                  Color(0xFFFF8C00), // Bright Orange
                                                 ],
                                                 begin: Alignment.centerLeft,
                                                 end: Alignment.centerRight,
@@ -422,22 +298,12 @@ class _HomePageState extends State<HomePage>
                                               fontWeight: FontWeight.w700,
                                               shadows: [
                                                 Shadow(
-                                                  color: const Color.fromARGB(
-                                                    255,
-                                                    255,
-                                                    102,
-                                                    0,
-                                                  ).withOpacity(0.8),
+                                                  color: Color(0xFFFFD700).withOpacity(0.8), // Yellow shadow
                                                   blurRadius: 15,
                                                   offset: Offset(0, 0),
                                                 ),
                                                 Shadow(
-                                                  color: const Color.fromARGB(
-                                                    255,
-                                                    255,
-                                                    20,
-                                                    20,
-                                                  ).withOpacity(0.6),
+                                                  color: Color(0xFFFF8C00).withOpacity(0.6), // Orange shadow
                                                   blurRadius: 30,
                                                   offset: Offset(0, 0),
                                                 ),
@@ -479,7 +345,8 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       SizedBox(height: 40),
-                      TopStoriesDashboard(),
+                      // REPLACE THE OLD TopStoriesDashboard WITH THE NEW COMPONENT
+                      RevolvingStoriesDashboard(),
                       SizedBox(height: 40),
                       Container(
                         width: double.infinity,
@@ -657,44 +524,46 @@ class Particle {
       opacity = (opacity + 0.15).clamp(0.0, 1.0);
     }
 
-    // Add size fluctuation
-    final sizeFluctuation = math.sin(time * 2 + sizePhase) * 0.3 + 1.0;
+    // Simplify calculations for better performance
+    // Use less frequent fluctuation updates
+    final sizeFluctuation = math.sin(time * 1.5 + sizePhase) * 0.2 + 1.0;
     final currentSize = size * sizeFluctuation;
 
-    // Add opacity fluctuation
-    final opacityFluctuation = math.sin(time * 1.5 + opacityPhase) * 0.2 + 0.8;
+    // Simplified opacity fluctuation
+    final opacityFluctuation = 0.8 + (time % 2 > 1 ? 0.2 : 0);
     final currentOpacity = opacity * opacityFluctuation;
 
-    // Add some wobble to the movement
-    angle += (random.nextDouble() - 0.5) * 0.2;
-    final wobbleX = math.sin(angle) * 0.5;
-    final wobbleY = math.cos(angle) * 0.5;
-
-    // Calculate speed decay after 15 seconds
-    if (time > 15) {
-      speedMultiplier = math.max(0.3, 1.0 - (time - 15) / 15);
+    // Simplify wobble movement
+    if (time % 0.5 < 0.1) {
+      angle += (random.nextDouble() - 0.5) * 0.1;
     }
+    final wobbleX = math.sin(angle) * 0.3;
+    final wobbleY = math.cos(angle) * 0.3;
 
-    // Apply movement with speed multiplier
+    // Speed decay starts much sooner and happens more rapidly
+    // Changed from: math.max(0.5, 1.0 - time / 40)
+    speedMultiplier = math.max(0.2, 1.0 - time / 15);
+
+    // Apply movement with increased speed
     position += Offset(
-      (speed.dx + wobbleX) * speedMultiplier * 0.3,
-      (speed.dy + wobbleY) * speedMultiplier * 0.3,
+      (speed.dx + wobbleX) * speedMultiplier * 0.8,
+      (speed.dy + wobbleY) * speedMultiplier * 0.8,
     );
 
-    // Bounce off screen edges with original bounce physics
-    if (position.dx < 0) {
-      position = Offset(0, position.dy);
-      speed = Offset(-speed.dx * 0.9, speed.dy + (random.nextDouble() - 0.5));
-    } else if (position.dx > screenSize.width) {
-      position = Offset(screenSize.width, position.dy);
-      speed = Offset(-speed.dx * 0.9, speed.dy + (random.nextDouble() - 0.5));
+    // Simplified bounce detection
+    if (position.dx < 0 || position.dx > screenSize.width) {
+      speed = Offset(-speed.dx * 0.9, speed.dy);
+      position = Offset(
+        position.dx < 0 ? 0 : screenSize.width,
+        position.dy
+      );
     }
-    if (position.dy < 0) {
-      position = Offset(position.dx, 0);
-      speed = Offset(speed.dx + (random.nextDouble() - 0.5), -speed.dy * 0.9);
-    } else if (position.dy > screenSize.height) {
-      position = Offset(position.dx, screenSize.height);
-      speed = Offset(speed.dx + (random.nextDouble() - 0.5), -speed.dy * 0.9);
+    if (position.dy < 0 || position.dy > screenSize.height) {
+      speed = Offset(speed.dx, -speed.dy * 0.9);
+      position = Offset(
+        position.dx,
+        position.dy < 0 ? 0 : screenSize.height
+      );
     }
 
     // Update the particle's current size and opacity for rendering
@@ -788,8 +657,8 @@ class _ParticleBackgroundState extends State<ParticleBackground>
   void _initializeParticles(Size screenSize) {
     if (textBounds == null) return;
     if (particles.isEmpty) {
-      // Decrease the particle count for improved performance.
-      final particleCount = (screenSize.width * screenSize.height / 15000).round();
+      // Further reduce the particle count for better performance
+      final particleCount = (screenSize.width * screenSize.height / 30000).round();
       particles = List.generate(
         particleCount,
         (index) => _createParticle(screenSize),
@@ -799,16 +668,23 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 
   Particle _createParticle(Size screenSize) {
   final colors = [
-    const Color.fromRGBO(255, 69, 0, 0.8),    // Red
+    // Keep existing feminine colors
+    const Color.fromRGBO(255, 105, 180, 0.8),  // Hot Pink
+    const Color.fromRGBO(255, 182, 193, 0.8),  // Light Pink
+    const Color.fromRGBO(219, 112, 147, 0.8),  // Pale Violet Red
+    const Color.fromRGBO(255, 20, 147, 0.8),   // Deep Pink
+    
+    // Add red and orange colors
+    const Color.fromRGBO(255, 69, 0, 0.8),     // Red-Orange
     const Color.fromRGBO(255, 140, 0, 0.8),    // Dark Orange
-    const Color.fromRGBO(255, 165, 0, 0.8),    // Orange
-    const Color.fromRGBO(255, 215, 0, 0.8),    // Gold/Yellow
   ];
 
   final startX = textBounds!.left + textBounds!.width / 2;
   final startY = textBounds!.top + textBounds!.height / 2;
   final randomAngle = random.nextDouble() * 2 * math.pi;
-  final speed = 8.0 + random.nextDouble() * 20.0;
+  
+  // Increase initial speed for faster movement
+  final speed = 15.0 + random.nextDouble() * 20.0;
   final velocityX = math.cos(randomAngle) * speed;
   final velocityY = math.sin(randomAngle) * speed;
 
@@ -816,7 +692,8 @@ class _ParticleBackgroundState extends State<ParticleBackground>
     position: Offset(startX, startY),
     speed: Offset(velocityX, velocityY),
     color: colors[random.nextInt(colors.length)],
-    size: random.nextDouble() * 15 + 1,
+    // Increase average particle size (was: random.nextDouble() * 8 + 1)
+    size: random.nextDouble() * 12 + 4,
     initialDelay: random.nextDouble() * 0.2,
   );
 }
@@ -861,12 +738,12 @@ class _ParticleBackgroundState extends State<ParticleBackground>
                 );
 
                 // Calculate fade based on vertical position
-                double fadeThreshold = textBounds!.top;
+                // Use a lower position for the fadeThreshold (roughly where the spotlight panel is)
+                double fadeThreshold = MediaQuery.of(context).size.height * 0.6;
                 if (particle.position.dy < fadeThreshold) {
-                  // Full opacity at top, fading to zero at threshold
-                  particle.currentOpacity = (1 -
-                          (particle.position.dy / fadeThreshold))
-                      .clamp(0.0, 1.0);
+                  // Full opacity well below the text, fading out at the spotlight panel area
+                  double distance = (fadeThreshold - particle.position.dy) / fadeThreshold;
+                  particle.currentOpacity = (distance * 0.8).clamp(0.0, 1.0);
                 } else {
                   particle.currentOpacity = 0.0;
                 }
