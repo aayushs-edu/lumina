@@ -1,0 +1,163 @@
+Theme Distribution:
+Domestic: 151 stories
+Workplace: 92 stories
+Education: 77 stories
+Healthcare: 52 stories
+Public Space: 44 stories
+Identity: 37 stories
+Cultural: 12 stories
+
+AI-discovered themes (clusters):
+
+Cluster 0 (75 stories):
+Top words: work, covid, time, pandemic, home, didn, people, did, started, life
+Sample story: Anyway, it was just a month but while the guys in our group got to set bones and stuff, we got to wr...
+
+Cluster 1 (70 stories):
+Top words: people, pandemic, like, time, don, just, ve, really, going, know
+Sample story: Whenever I mentioned my job in finance, people automatically assumed my boss must be a man. Their as...
+
+Cluster 2 (34 stories):
+Top words: women, woman, work, felt, day, told, like, make, family, social
+Sample story: Throughout my life, I encountered countless moments where I felt undervalued simply because I was a ...
+
+Cluster 3 (48 stories):
+Top words: children, husband, pandemic, work, home, daughter, time, school, son, care
+Sample story: I applied for a joint mortgage with my husband. During the process of checking our current credit an...
+
+Cluster 4 (24 stories):
+Top words: school, just, day, time, years, hard, year, online, like, got
+Sample story: I vividly remember a childhood where subtle inequalities were so normalized that I never questioned ...
+
+==================================================
+STORY TALLIES BY THEME (Total Stories: 251)
+==================================================
+
+Theme: Healthcare
+Belgium: 4 stories (1.59%)
+China: 1 stories (0.40%)
+Greece: 1 stories (0.40%)
+Iceland: 2 stories (0.80%)
+Ireland: 1 stories (0.40%)
+Morocco: 1 stories (0.40%)
+Russia: 1 stories (0.40%)
+Sri Lanka: 1 stories (0.40%)
+United Kingdom: 1 stories (0.40%)
+United States: 39 stories (15.54%)
+
+Theme: Public Space
+Austria: 1 stories (0.40%)
+Bangladesh: 1 stories (0.40%)
+Belgium: 2 stories (0.80%)
+Canada: 1 stories (0.40%)
+Germany: 1 stories (0.40%)
+Global: 1 stories (0.40%)
+Luxembourg: 1 stories (0.40%)
+Nepal: 1 stories (0.40%)
+Saudi Arabia: 2 stories (0.80%)
+United States: 33 stories (13.15%)
+
+Theme: Workplace
+Afghanistan: 1 stories (0.40%)
+Austria: 1 stories (0.40%)
+Belgium: 3 stories (1.20%)
+Brazil: 1 stories (0.40%)
+Bulgaria: 1 stories (0.40%)
+Cyprus: 1 stories (0.40%)
+Finland: 1 stories (0.40%)
+Georgia: 1 stories (0.40%)
+Germany: 2 stories (0.80%)
+Iceland: 1 stories (0.40%)
+India: 2 stories (0.80%)
+Ireland: 1 stories (0.40%)
+Italy: 2 stories (0.80%)
+Japan: 1 stories (0.40%)
+Kenya: 1 stories (0.40%)
+Latvia: 2 stories (0.80%)
+Philippines: 1 stories (0.40%)
+Spain: 2 stories (0.80%)
+United Kingdom: 1 stories (0.40%)
+United States: 65 stories (25.90%)
+Unspecified: 1 stories (0.40%)
+
+Theme: Cultural
+India: 3 stories (1.20%)
+Nepal: 1 stories (0.40%)
+Pakistan: 1 stories (0.40%)
+Russia: 1 stories (0.40%)
+Saudi Arabia: 1 stories (0.40%)
+South Korea: 1 stories (0.40%)
+United States: 2 stories (0.80%)
+Unspecified: 2 stories (0.80%)
+
+Theme: Domestic
+Afghanistan: 1 stories (0.40%)
+Belgium: 3 stories (1.20%)
+Brazil: 2 stories (0.80%)
+Bulgaria: 1 stories (0.40%)
+China: 1 stories (0.40%)
+Cyprus: 1 stories (0.40%)
+Denmark: 2 stories (0.80%)
+Georgia: 1 stories (0.40%)
+Germany: 1 stories (0.40%)
+Greece: 1 stories (0.40%)
+Hungary: 1 stories (0.40%)
+Iceland: 2 stories (0.80%)
+India: 3 stories (1.20%)
+Indonesia: 1 stories (0.40%)
+Ireland: 1 stories (0.40%)
+Italy: 2 stories (0.80%)
+Latvia: 4 stories (1.59%)
+Luxembourg: 1 stories (0.40%)
+Nepal: 2 stories (0.80%)
+Poland: 2 stories (0.80%)
+Russia: 1 stories (0.40%)
+Somalia: 1 stories (0.40%)
+South Asia: 1 stories (0.40%)
+Spain: 1 stories (0.40%)
+Sri Lanka: 1 stories (0.40%)
+Sweden: 2 stories (0.80%)
+United Kingdom: 1 stories (0.40%)
+United States: 109 stories (43.43%)
+Unspecified: 1 stories (0.40%)
+
+Theme: Education
+Belgium: 2 stories (0.80%)
+Brazil: 1 stories (0.40%)
+Denmark: 1 stories (0.40%)
+Germany: 1 stories (0.40%)
+Greece: 1 stories (0.40%)
+Hungary: 1 stories (0.40%)
+Iceland: 2 stories (0.80%)
+India: 1 stories (0.40%)
+Indonesia: 1 stories (0.40%)
+Ireland: 4 stories (1.59%)
+Japan: 1 stories (0.40%)
+Latvia: 2 stories (0.80%)
+Morocco: 1 stories (0.40%)
+Pakistan: 1 stories (0.40%)
+Poland: 2 stories (0.80%)
+Somalia: 1 stories (0.40%)
+South Asia: 1 stories (0.40%)
+Sweden: 2 stories (0.80%)
+United States: 50 stories (19.92%)
+Unspecified: 1 stories (0.40%)
+
+Theme: Identity
+Bangladesh: 1 stories (0.40%)
+Canada: 1 stories (0.40%)
+Denmark: 1 stories (0.40%)
+Global: 1 stories (0.40%)
+Greece: 1 stories (0.40%)
+Iceland: 1 stories (0.40%)
+India: 2 stories (0.80%)
+Ireland: 1 stories (0.40%)
+Kenya: 1 stories (0.40%)
+Nepal: 2 stories (0.80%)
+Philippines: 1 stories (0.40%)
+Russia: 1 stories (0.40%)
+Saudi Arabia: 3 stories (1.20%)
+South Korea: 1 stories (0.40%)
+Spain: 1 stories (0.40%)
+UK: 1 stories (0.40%)
+United States: 17 stories (6.77%)
