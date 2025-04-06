@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'widgets/navbar.dart';
 
 class DataCenterPage extends StatelessWidget {
   final List<Map<String, String>> stories = [
@@ -10,10 +11,10 @@ class DataCenterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Data Center", style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
-        elevation: 0,
+      extendBodyBehindAppBar: true,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: LuminaNavbar(currentPage: 'dataCenter'),
       ),
       body: ListView.builder(
         itemCount: stories.length,

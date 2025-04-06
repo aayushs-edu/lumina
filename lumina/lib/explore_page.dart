@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'widgets/navbar.dart';
 
 class ExplorePage extends StatelessWidget {
   @override
@@ -7,124 +8,8 @@ class ExplorePage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: AppBar(
-          toolbarHeight: 60,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          automaticallyImplyLeading: false, // Hide back button
-          title: Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // First navigation item: Explore with attached auto_awesome icon
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: const Color.fromARGB(255, 255, 102, 0),
-                      ),
-                      SizedBox(width: 4),
-                      TextButton(
-                        onPressed: () {
-                          // Already on explore page
-                        },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        ),
-                        child: Text(
-                          "Explore",
-                          style: TextStyle(
-                            color: const Color.fromARGB(255, 255, 102, 0),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(width: 16),
-                  // Other navigation items
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/todaysTopic');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Today's Spotlight",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/postStory');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Post a Story",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/createLuminaPost');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Create a Lumina Post",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/dataCenter');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    ),
-                    child: Text(
-                      "Data Center",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: LuminaNavbar(currentPage: 'explore'),
       ),
       backgroundColor: Colors.white,
       body: StoryListView(),
