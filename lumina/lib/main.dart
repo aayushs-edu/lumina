@@ -6,6 +6,8 @@ import 'todays_topic_page.dart';
 import 'post_story_page.dart';
 import 'create_lumina_post_page.dart';
 import 'data_center_page.dart';
+import 'top_stories_dashboard.dart'; // filepath adjusted as needed
+import 'explore_page.dart'; // filepath adjusted as needed
 
 void main() {
   runApp(LuminaApp());
@@ -42,6 +44,7 @@ class LuminaApp extends StatelessWidget {
         '/postStory': (context) => PostStoryPage(),
         '/createLuminaPost': (context) => CreateLuminaPostPage(),
         '/dataCenter': (context) => DataCenterPage(),
+        '/explore': (context) => ExplorePage(), // new route
       },
     );
   }
@@ -82,51 +85,59 @@ class _HomePageState extends State<HomePage>
         preferredSize: Size.fromHeight(60),
         child: AppBar(
           toolbarHeight: 60,
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.transparent, // changed to transparent
           elevation: 0,
           title: Center(
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Color(0xFF1A1A1A),
+                color: Colors.white, // container background remains white
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: Colors.black12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo/icon
-                  Container(
-                    height: 24,
-                    width: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white24,
-                    ),
-                    child: Center(
-                      child: Icon(
+                  // New first navigation item: Explore with attached auto_awesome icon
+                  Row(
+                    children: [
+                      Icon(
                         Icons.auto_awesome,
-                        size: 14,
-                        color: Colors.white,
+                        size: 16,
+                        color: const Color.fromARGB(255, 255, 102, 0), // red-orange
                       ),
-                    ),
+                      SizedBox(width: 4),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/explore');
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        ),
+                        child: Text(
+                          "Explore",
+                          style: TextStyle(
+                            color: const Color.fromARGB(255, 255, 102, 0), // red-orange
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(width: 16),
-                  // Your navigation items with COSMOS styling
+                  // Existing navigation items follow
                   TextButton(
                     onPressed: () {
                       Navigator.pushNamed(context, '/todaysTopic');
                     },
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
                     child: Text(
-                      "Today's Topic",
+                      "Today's Spotlight",
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: Colors.black,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
@@ -138,15 +149,12 @@ class _HomePageState extends State<HomePage>
                       Navigator.pushNamed(context, '/postStory');
                     },
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
                     child: Text(
                       "Post a Story",
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: Colors.black,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
@@ -158,15 +166,12 @@ class _HomePageState extends State<HomePage>
                       Navigator.pushNamed(context, '/createLuminaPost');
                     },
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
                     child: Text(
                       "Create a Lumina Post",
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: Colors.black,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
@@ -178,15 +183,12 @@ class _HomePageState extends State<HomePage>
                       Navigator.pushNamed(context, '/dataCenter');
                     },
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     ),
                     child: Text(
                       "Data Center",
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: Colors.black,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                       ),
@@ -293,162 +295,192 @@ class _HomePageState extends State<HomePage>
                         child: Container(
                           constraints: BoxConstraints(maxWidth: 800),
                           padding: EdgeInsets.symmetric(horizontal: 32),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color.fromARGB(
-                                  255,
-                                  255,
-                                  20,
-                                  20,
-                                ).withOpacity(0.3),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    255,
-                                    20,
-                                    20,
-                                  ).withOpacity(0.1),
-                                  blurRadius: 2,
-                                  spreadRadius: 0,
-                                  offset: Offset(0, 0),
-                                ),
-                                BoxShadow(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    255,
-                                    20,
-                                    20,
-                                  ).withOpacity(0.15),
-                                  blurRadius: 8,
-                                  spreadRadius: 0,
-                                  offset: Offset(0, 0),
-                                ),
-                                BoxShadow(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    255,
-                                    20,
-                                    20,
-                                  ).withOpacity(0.1),
-                                  blurRadius: 20,
-                                  spreadRadius: 0,
-                                  offset: Offset(0, 0),
-                                ),
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 24,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Today's Theme",
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w600,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Left decorative element
+                              Positioned(
+                                left: -60,
+                                child: CustomPaint(
+                                  size: Size(140, 180),
+                                  painter: DecorativeCurlPainter(
+                                    color: const Color.fromARGB(255, 255, 102, 0),
+                                    flip: false,
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
-                                SizedBox(height: 16),
-                                Stack(
-                                  children: [
-                                    ShaderMask(
-                                      shaderCallback:
-                                          (bounds) => LinearGradient(
-                                            colors: [
-                                              const Color.fromARGB(
-                                                255,
-                                                255,
-                                                102,
-                                                0,
-                                              ),
-                                              const Color.fromARGB(
-                                                255,
-                                                255,
-                                                20,
-                                                20,
-                                              ),
-                                            ],
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
-                                          ).createShader(bounds),
-                                      child: Text(
-                                        "Gender Inequality",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 42,
-                                          fontWeight: FontWeight.w700,
-                                          shadows: [
-                                            Shadow(
-                                              color: const Color.fromARGB(
-                                                255,
-                                                255,
-                                                102,
-                                                0,
-                                              ).withOpacity(0.8),
-                                              blurRadius: 15,
-                                              offset: Offset(0, 0),
-                                            ),
-                                            Shadow(
-                                              color: const Color.fromARGB(
-                                                255,
-                                                255,
-                                                20,
-                                                20,
-                                              ).withOpacity(0.6),
-                                              blurRadius: 30,
-                                              offset: Offset(0, 0),
-                                            ),
-                                          ],
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
+                              ),
+                              // Right decorative element
+                              Positioned(
+                                right: -60,
+                                child: CustomPaint(
+                                  size: Size(140, 180),
+                                  painter: DecorativeCurlPainter(
+                                    color: const Color.fromARGB(255, 255, 102, 0),
+                                    flip: true,
+                                  ),
+                                ),
+                              ),
+                              // Main content panel
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color.fromARGB(
+                                      255,
+                                      255,
+                                      20,
+                                      20,
+                                    ).withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        20,
+                                        20,
+                                      ).withOpacity(0.1),
+                                      blurRadius: 2,
+                                      spreadRadius: 0,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    BoxShadow(
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        20,
+                                        20,
+                                      ).withOpacity(0.15),
+                                      blurRadius: 8,
+                                      spreadRadius: 0,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    BoxShadow(
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        20,
+                                        20,
+                                      ).withOpacity(0.1),
+                                      blurRadius: 20,
+                                      spreadRadius: 0,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 40,
+                                  vertical: 24,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Transform.rotate(
-                                      angle: -0.3,
-                                      child: Icon(
-                                        Icons.arrow_forward,
-                                        size: 24,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
                                     Text(
-                                      "View Stories",
+                                      "Today's Spotlight",
                                       style: TextStyle(
-                                        color: Colors.black54,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w600,
                                       ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Stack(
+                                      children: [
+                                        ShaderMask(
+                                          shaderCallback:
+                                              (bounds) => LinearGradient(
+                                                colors: [
+                                                  const Color.fromARGB(
+                                                    255,
+                                                    255,
+                                                    102,
+                                                    0,
+                                                  ),
+                                                  const Color.fromARGB(
+                                                    255,
+                                                    255,
+                                                    20,
+                                                    20,
+                                                  ),
+                                                ],
+                                                begin: Alignment.centerLeft,
+                                                end: Alignment.centerRight,
+                                              ).createShader(bounds),
+                                          child: Text(
+                                            "Gender Inequality",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 42,
+                                              fontWeight: FontWeight.w700,
+                                              shadows: [
+                                                Shadow(
+                                                  color: const Color.fromARGB(
+                                                    255,
+                                                    255,
+                                                    102,
+                                                    0,
+                                                  ).withOpacity(0.8),
+                                                  blurRadius: 15,
+                                                  offset: Offset(0, 0),
+                                                ),
+                                                Shadow(
+                                                  color: const Color.fromARGB(
+                                                    255,
+                                                    255,
+                                                    20,
+                                                    20,
+                                                  ).withOpacity(0.6),
+                                                  blurRadius: 30,
+                                                  offset: Offset(0, 0),
+                                                ),
+                                              ],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 24),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Transform.rotate(
+                                          angle: -0.3,
+                                          child: Icon(
+                                            Icons.arrow_forward,
+                                            size: 24,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          "View Stories",
+                                          style: TextStyle(
+                                            color: Colors.black54,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      SizedBox(height: 100),
+                      SizedBox(height: 40),
+                      TopStoriesDashboard(),
+                      SizedBox(height: 40),
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(horizontal: 32),
@@ -536,6 +568,54 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
+}
+
+// Create a custom painter for the decorative curls
+class DecorativeCurlPainter extends CustomPainter {
+  final Color color;
+  final bool flip;
+
+  DecorativeCurlPainter({required this.color, this.flip = false});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    
+    if (flip) {
+      // Flipped (right side) curly design
+      canvas.scale(-1, 1);
+      canvas.translate(-size.width, 0);
+    }
+    
+    // Main stem
+    path.moveTo(10, 5);
+    path.quadraticBezierTo(30, 80, 15, 190);
+    
+    // Upper curl
+    path.moveTo(15, 190);
+    path.quadraticBezierTo(40, 150, 110, 170);
+    path.quadraticBezierTo(120, 190, 70, 200);
+    
+    // Middle curl
+    path.moveTo(70, 200);
+    path.quadraticBezierTo(100, 190, 130, 160);
+    
+    // Small curl
+    path.moveTo(60, 210);
+    path.quadraticBezierTo(40, 230, 60, 240);
+    path.quadraticBezierTo(80, 250, 50, 260);
+    
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class Particle {
@@ -707,10 +787,9 @@ class _ParticleBackgroundState extends State<ParticleBackground>
 
   void _initializeParticles(Size screenSize) {
     if (textBounds == null) return;
-
     if (particles.isEmpty) {
-      final particleCount =
-          (screenSize.width * screenSize.height / 8000).round();
+      // Decrease the particle count for improved performance.
+      final particleCount = (screenSize.width * screenSize.height / 15000).round();
       particles = List.generate(
         particleCount,
         (index) => _createParticle(screenSize),
@@ -719,34 +798,28 @@ class _ParticleBackgroundState extends State<ParticleBackground>
   }
 
   Particle _createParticle(Size screenSize) {
-    final colors = [
-      const Color.fromRGBO(255, 82, 182, 0.7),
-      const Color.fromRGBO(147, 51, 234, 0.7),
-      const Color.fromRGBO(255, 64, 129, 0.7),
-      const Color.fromRGBO(124, 77, 255, 0.7),
-      const Color.fromRGBO(255, 145, 0, 0.7),
-    ];
+  final colors = [
+    const Color.fromRGBO(255, 69, 0, 0.8),    // Red
+    const Color.fromRGBO(255, 140, 0, 0.8),    // Dark Orange
+    const Color.fromRGBO(255, 165, 0, 0.8),    // Orange
+    const Color.fromRGBO(255, 215, 0, 0.8),    // Gold/Yellow
+  ];
 
-    // Start all particles from the center of the text
-    final startX = textBounds!.left + textBounds!.width / 2;
-    final startY = textBounds!.top + textBounds!.height / 2;
+  final startX = textBounds!.left + textBounds!.width / 2;
+  final startY = textBounds!.top + textBounds!.height / 2;
+  final randomAngle = random.nextDouble() * 2 * math.pi;
+  final speed = 8.0 + random.nextDouble() * 20.0;
+  final velocityX = math.cos(randomAngle) * speed;
+  final velocityY = math.sin(randomAngle) * speed;
 
-    // Calculate random angle for radial movement
-    final randomAngle = random.nextDouble() * 2 * math.pi;
-
-    // Much faster initial speed (increased from 2.0-5.0 to 8.0-12.0)
-    final speed = 8.0 + random.nextDouble() * 20.0;
-    final velocityX = math.cos(randomAngle) * speed;
-    final velocityY = math.sin(randomAngle) * speed;
-
-    return Particle(
-      position: Offset(startX, startY),
-      speed: Offset(velocityX, velocityY),
-      color: colors[random.nextInt(colors.length)],
-      size: random.nextDouble() * 15 + 1,
-      initialDelay: random.nextDouble() * 0.2,
-    );
-  }
+  return Particle(
+    position: Offset(startX, startY),
+    speed: Offset(velocityX, velocityY),
+    color: colors[random.nextInt(colors.length)],
+    size: random.nextDouble() * 15 + 1,
+    initialDelay: random.nextDouble() * 0.2,
+  );
+}
 
   @override
   void dispose() {
