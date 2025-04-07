@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lumina/services/firebase_service.dart';
 import 'widgets/navbar.dart';
 
 class PostStoryPage extends StatefulWidget {
@@ -40,6 +41,55 @@ class _PostStoryPageState extends State<PostStoryPage> {
     'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 
     'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe', 'Other'
   ];
+
+  void _submitStory() async {
+    if (titleController.text.isNotEmpty && 
+        bodyController.text.isNotEmpty && 
+        selectedTheme != null && 
+        selectedCountry != null) {
+      
+      try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(child: CircularProgressIndicator()),
+        );
+        
+        // Add story to Firestore
+        await FirebaseService.addStory(
+          title: titleController.text,
+          story: bodyController.text,
+          country: selectedCountry!,
+          themes: [selectedTheme!],
+          keywords: [], // You could add keyword extraction here
+        );
+        
+        // Hide loading indicator
+        Navigator.of(context).pop();
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Your story has been posted anonymously. Thank you for sharing.")),
+        );
+        
+        // Navigate back to explore page
+        Navigator.pushNamed(context, '/explore');
+      } catch (e) {
+        // Hide loading indicator
+        Navigator.of(context).pop();
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error posting story. Please try again.")),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please fill in all fields")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -315,21 +365,7 @@ class _PostStoryPageState extends State<PostStoryPage> {
                     width: 160,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Handle post submission
-                        if (titleController.text.isNotEmpty && bodyController.text.isNotEmpty && selectedTheme != null && selectedCountry != null) {
-                          // Submit story
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Your story has been posted anonymously. Thank you for sharing.")),
-                          );
-                          // Navigate back to explore page or show confirmation
-                          Navigator.pushNamed(context, '/explore');
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Please fill in all fields")),
-                          );
-                        }
-                      },
+                      onPressed: _submitStory,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFFF3D00),
                         shape: RoundedRectangleBorder(

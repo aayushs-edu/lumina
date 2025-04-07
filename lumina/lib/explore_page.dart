@@ -1,8 +1,130 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lumina/services/firebase_service.dart';
 import 'widgets/navbar.dart';
+import 'services/algolia_service.dart';
+import 'models/story_model.dart';
 
-class ExplorePage extends StatelessWidget {
+class ExplorePage extends StatefulWidget {
+  @override
+  _ExplorePageState createState() => _ExplorePageState();
+}
+
+class _ExplorePageState extends State<ExplorePage> {
+  List<Story> stories = [];
+  bool isLoading = true;
+  String searchQuery = '';
+  String? selectedTheme;
+  String? selectedCountry;
+  
+  final TextEditingController searchController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadStories();
+  }
+  
+  Future<void> _loadStories() async {
+    setState(() {
+      isLoading = true;
+    });
+    
+    try {
+      List<Map<String, dynamic>> results;
+      
+      if (searchQuery.isNotEmpty || selectedTheme != null || selectedCountry != null) {
+        results = await AlgoliaService.searchWithFilters(
+          query: searchQuery,
+          theme: selectedTheme,
+          country: selectedCountry,
+        );
+      } else {
+        // Just get all stories
+        results = await AlgoliaService.searchStories('');
+      }
+      
+      setState(() {
+        stories = results.map((map) => Story.fromMap(map)).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading stories: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+  
+  void _search() {
+    _loadStories();
+  }
+  
+  void _showFilterOptions() {
+    // Implement filter dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Filter Stories'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Theme dropdown
+            DropdownButton<String>(
+              isExpanded: true,
+              hint: Text('Select Theme'),
+              value: selectedTheme,
+              items: ['Workplace', 'Domestic', 'Educational', 'Healthcare', 'Public Space', 'Other', null]
+                  .map((theme) => DropdownMenuItem(
+                        value: theme,
+                        child: Text(theme ?? 'All Themes'),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedTheme = value;
+                });
+              },
+            ),
+            SizedBox(height: 16),
+            // Country dropdown
+            DropdownButton<String>(
+              isExpanded: true,
+              hint: Text('Select Country'),
+              value: selectedCountry,
+              items: ['India', 'Saudi Arabia', 'United States', 'Other', null]
+                  .map((country) => DropdownMenuItem(
+                        value: country,
+                        child: Text(country ?? 'All Countries'),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedCountry = value;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _loadStories();
+            },
+            child: Text('Apply'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -12,101 +134,107 @@ class ExplorePage extends StatelessWidget {
         child: LuminaNavbar(currentPage: 'explore'),
       ),
       backgroundColor: Colors.white,
-      body: StoryListView(),
-    );
-  }
-}
-
-class StoryListView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
-        child: Column(
-          children: [
-            // Search bar and filter
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
+          child: Column(
+            children: [
+              // Search bar and filter
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search stories...',
+                          prefixIcon: Icon(Icons.search),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 15),
+                        ),
+                        onChanged: (value) {
+                          searchQuery = value;
+                        },
+                        onSubmitted: (_) => _search(),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Container(
                     height: 50,
+                    width: 50,
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(25),
                     ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search stories...',
-                        prefixIcon: Icon(Icons.search),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 15),
-                      ),
+                    child: IconButton(
+                      icon: Icon(Icons.tune),
+                      onPressed: _showFilterOptions,
                     ),
-                  ),
-                ),
-                SizedBox(width: 10),
-                Container(
-                  height: 50,
-                  width: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.tune),
-                    onPressed: () {
-                      // Show filter options
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            // Story list
-            Expanded(
-              child: ListView(
-                children: [
-                  ExpandableStoryCard(
-                    title: "They wouldn't let me work",
-                    theme: "Workplace",
-                    themeColor: Colors.red,
-                    country: "India",
-                    shortContent: "I have experience gender inequality at my job ever since I started working there...",
-                    fullContent: "I have experience gender inequality at my job ever since I started working there. Nepal's total population is about 30 million. Out of this more than fifty percent is Women.\n\nIn Nepal, like other developing countries, the state of women is not satisfactory. Male dominated family system provides very little scope for the female to assert their identity. They are marginalized from economic and social opportunities due to illiteracy, poverty and conservative social taboos. The present status of women is said to be strong than the past but it is the same.\n\n32 women have been Members of Parliament after restoration of democracy but it is only limited up to the written forms but not so practically. The status of women is the same as it used to be in the past. Along with the passes of time different changes has been made and in various sectors reservation seats no. for women have been extended.",
-                    likes: 25,
-                  ),
-                  SizedBox(height: 16),
-                  ExpandableStoryCard(
-                    title: "My husband beat me",
-                    theme: "Domestic",
-                    themeColor: Colors.purple,
-                    country: "Saudi Arabia",
-                    shortContent: "I have experience gender inequality at my job ever since I started working there...",
-                    fullContent: "I have experience gender inequality at my job ever since I started working there. This is a placeholder for the full story content.",
-                    likes: 14,
-                  ),
-                  SizedBox(height: 16),
-                  ExpandableStoryCard(
-                    title: "They wouldn't let me work",
-                    theme: "Workplace",
-                    themeColor: Colors.red,
-                    country: "India",
-                    shortContent: "I have experience gender inequality at my job ever since I started working there...",
-                    fullContent: "I have experience gender inequality at my job ever since I started working there. This is a placeholder for the full story content.",
-                    likes: 25,
                   ),
                 ],
               ),
-            ),
-          ],
+              SizedBox(height: 16),
+              // Story list
+              Expanded(
+                child: isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : stories.isEmpty
+                        ? Center(child: Text('No stories found'))
+                        : ListView.builder(
+                            itemCount: stories.length,
+                            itemBuilder: (context, index) {
+                              final story = stories[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: ExpandableStoryCard(
+                                  storyId: story.id,
+                                  title: story.title,
+                                  theme: story.themes.isNotEmpty ? story.themes[0] : 'Other',
+                                  themeColor: _getThemeColor(story.themes.isNotEmpty ? story.themes[0] : 'Other'),
+                                  country: story.country,
+                                  shortContent: story.story.length > 100
+                                      ? '${story.story.substring(0, 100)}...'
+                                      : story.story,
+                                  fullContent: story.story,
+                                  likes: story.likes,
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+  
+  Color _getThemeColor(String theme) {
+    switch (theme) {
+      case 'Workplace':
+        return Colors.red;
+      case 'Domestic':
+        return Colors.purple;
+      case 'Educational':
+        return Colors.blue;
+      case 'Healthcare':
+        return Colors.green;
+      case 'Public Space':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
 }
 
 class ExpandableStoryCard extends StatefulWidget {
+  final String storyId;
   final String title;
   final String theme;
   final Color themeColor;
@@ -117,6 +245,7 @@ class ExpandableStoryCard extends StatefulWidget {
 
   const ExpandableStoryCard({
     Key? key,
+    required this.storyId,
     required this.title,
     required this.theme,
     required this.themeColor,
@@ -134,12 +263,42 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
   bool _isExpanded = false;
   bool _isHovering = false;
   bool _isLiked = false;
-  int _likeCount = 0;
+  late int _likeCount;
 
   @override
   void initState() {
     super.initState();
     _likeCount = widget.likes;
+  }
+
+  // Rest of your ExpandableStoryCard implementation remains the same
+  // Just update the like functionality to use Firebase
+
+  void _toggleLike() async {
+    setState(() {
+      if (_isLiked) {
+        _likeCount--;
+      } else {
+        _likeCount++;
+      }
+      _isLiked = !_isLiked;
+    });
+    
+    // Update likes in Firestore
+    try {
+      await FirebaseService.updateLikes(widget.storyId, _likeCount);
+    } catch (e) {
+      print('Error updating likes: $e');
+      // Revert the state if there's an error
+      setState(() {
+        if (_isLiked) {
+          _likeCount--;
+        } else {
+          _likeCount++;
+        }
+        _isLiked = !_isLiked;
+      });
+    }
   }
 
   @override
@@ -237,14 +396,7 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
                   child: _isExpanded
                       ? GestureDetector(
                           onTap: () {
-                            setState(() {
-                              if (_isLiked) {
-                                _likeCount--;
-                              } else {
-                                _likeCount++;
-                              }
-                              _isLiked = !_isLiked;
-                            });
+                            _toggleLike();
                           },
                           child: Row(
                             mainAxisSize: MainAxisSize.min,

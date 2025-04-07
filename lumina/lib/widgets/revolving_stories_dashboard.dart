@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:async'; // Add this import for Timer
+import 'dart:async';
+
+import 'package:lumina/models/story_model.dart';
+import 'package:lumina/services/firebase_service.dart'; // Add this import for Timer
 
 class RevolvingStoriesDashboard extends StatefulWidget {
   @override
@@ -9,31 +12,35 @@ class RevolvingStoriesDashboard extends StatefulWidget {
 
 class _RevolvingStoriesDashboardState extends State<RevolvingStoriesDashboard> with SingleTickerProviderStateMixin {
   late PageController _pageController;
-  int _currentPage = 1; // Start with middle page
+  int _currentPage = 0; // Start with middle page
   double viewportFraction = 0.375; // Increased from 0.3 to 0.375 (1.25x wider)
   Timer? _autoScrollTimer; // Timer for auto scrolling
   
-  final List<StoryPanel> stories = [
-    StoryPanel(
-      title: "I faced discrimination",
-      content: "I have experienced gender inequality at my job ever since I started working there...",
-      country: "India",
-    ),
-    StoryPanel(
-      title: "Gender pay gap",
-      content: "Despite having the same qualifications, I was paid 30% less than my male colleagues...",
-      country: "USA",
-    ),
-    StoryPanel(
-      title: "Education denied",
-      content: "My brothers were sent to school while I was expected to help with household chores...",
-      country: "Afghanistan",
-    ),
-  ];
+  List<Story> stories = []; // List of stories to be displayed
+  bool isLoading = true; // Loading state
+
+  // final List<StoryPanel> stories = [
+  //   StoryPanel(
+  //     title: "I faced discrimination",
+  //     content: "I have experienced gender inequality at my job ever since I started working there...",
+  //     country: "India",
+  //   ),
+  //   StoryPanel(
+  //     title: "Gender pay gap",
+  //     content: "Despite having the same qualifications, I was paid 30% less than my male colleagues...",
+  //     country: "USA",
+  //   ),
+  //   StoryPanel(
+  //     title: "Education denied",
+  //     content: "My brothers were sent to school while I was expected to help with household chores...",
+  //     country: "Afghanistan",
+  //   ),
+  // ];
 
   @override
   void initState() {
     super.initState();
+    _loadRandomStories(); // Load random stories on initialization
     // Initialize with the middle page and add padding on sides to create the revolving effect
     _pageController = PageController(
       initialPage: _currentPage,
@@ -66,6 +73,21 @@ class _RevolvingStoriesDashboardState extends State<RevolvingStoriesDashboard> w
     super.dispose();
   }
 
+  Future<void> _loadRandomStories() async {
+    try {
+      List<Map<String, dynamic>> results = await FirebaseService.getRandomStories(3);
+      setState(() {
+        stories = results.map((map) => Story.fromMap(map)).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading random stories: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -94,44 +116,50 @@ class _RevolvingStoriesDashboardState extends State<RevolvingStoriesDashboard> w
         // Revolving panels
         Container(
           height: 210, // Increased from 120 to 210 (1.75x)
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: stories.length,
-            onPageChanged: (int page) {
-              setState(() {
-                _currentPage = page;
-              });
-            },
-            itemBuilder: (context, index) {
-              // Calculate scale factor for non-active pages
-              double value = 1.0;
-              if (_pageController.position.haveDimensions) {
-                value = index - _pageController.page!;
-                // Scale and opacity effects based on position
-                value = (1 - (value.abs() * 0.3)).clamp(0.8, 1.0);
-              } else {
-                // Apply initial scaling for panels before dimensions are available
-                double initialPage = _currentPage.toDouble();
-                value = index - initialPage;
-                value = (1 - (value.abs() * 0.3)).clamp(0.8, 1.0);
-              }
-              return AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: Opacity(
-                      opacity: value,
-                      child: StoryPanelCard(
-                        panel: stories[index],
-                        isActive: index == _currentPage,
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          child: isLoading
+              ? Center(child: CircularProgressIndicator()) // Loading indicator while fetching stories
+              :  PageView.builder(
+                  controller: _pageController,
+                  itemCount: stories.length,
+                  onPageChanged: (int page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    // Calculate scale factor for non-active pages
+                    double value = 1.0;
+                    if (_pageController.position.haveDimensions) {
+                      value = index - _pageController.page!;
+                      // Scale and opacity effects based on position
+                      value = (1 - (value.abs() * 0.3)).clamp(0.8, 1.0);
+                    } else {
+                      // Apply initial scaling for panels before dimensions are available
+                      double initialPage = _currentPage.toDouble();
+                      value = index - initialPage;
+                      value = (1 - (value.abs() * 0.3)).clamp(0.8, 1.0);
+                    }
+                    return AnimatedBuilder(
+                      animation: _pageController,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: value,
+                          child: Opacity(
+                            opacity: value,
+                            child: StoryPanelCard(
+                              panel: StoryPanel(
+                                title: stories[index].title, 
+                                content: stories[index].story, 
+                                country: stories[index].country,
+                              ),
+                              isActive: index == _currentPage,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
         ),
         SizedBox(height: 35), // Increased from 20 to 35
         // Navigation dots

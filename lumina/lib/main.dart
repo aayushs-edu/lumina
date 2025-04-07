@@ -1,5 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lumina/firebase_options.dart';
 import 'package:lumina/world_map.dart';
 import 'todays_topic_page.dart';
 import 'post_story_page.dart';
@@ -10,9 +12,15 @@ import 'widgets/navbar.dart';
 import 'widgets/revolving_stories_dashboard.dart';
 import 'widgets/particle_background.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(LuminaApp());
 }
+
+// Rest of your main.dart file remains the same
 
 class LuminaApp extends StatelessWidget {
   @override
