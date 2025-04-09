@@ -347,35 +347,59 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
           textAlign: TextAlign.center,
         ),
         SizedBox(height: 24),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Map
-            Expanded(
-              flex: 5,
-              child: AspectRatio(
-                aspectRatio: 2.2,
+        Container(
+          height: 500, // Fixed height to prevent layout constraints issues
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Map in white panel - 85%
+              Expanded(
+                flex: 85,
                 child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ..._regions.map((region) {
-                        return _getRegionImage(region);
-                      }),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color.fromARGB(
+                        255,
+                        255,
+                        20,
+                        20,
+                      ).withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        spreadRadius: 0,
+                        offset: Offset(0, 2),
+                      ),
                     ],
                   ),
+                  padding: EdgeInsets.all(16),
+                  child: _regions.isEmpty
+                      ? Center(child: CircularProgressIndicator())
+                      : FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: 1000, // Fixed reference size
+                            height: 450, // Fixed reference size
+                            child: Stack(
+                              children: [
+                                ..._regions.map((region) {
+                                  return _getRegionImage(region);
+                                }),
+                              ],
+                            ),
+                          ),
+                        ),
                 ),
               ),
-            ),
-            SizedBox(width: 12),
-            // Hotspots Panel
-            Expanded(
-              flex: 1,
-              child: SizedBox(
-                height: 500,
-                width: 200,
+              SizedBox(width: 12),
+              // Hotspots Panel - 15%
+              Expanded(
+                flex: 15,
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                   decoration: BoxDecoration(
@@ -404,27 +428,29 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                       ),
                     ],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Inequality Hotspots",
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Inequality Hotspots",
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 20),
-                      ..._getHotspotItems(),
-                    ],
+                        SizedBox(height: 20),
+                        ..._getHotspotItems(),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
