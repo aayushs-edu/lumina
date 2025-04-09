@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 # Read the CSV file
-df = pd.read_csv('stories_with_titles.csv')
+df = pd.read_csv('csv-DBs\masterdb_updated.csv')
 
 # Print original number of rows
 original_count = len(df)
@@ -26,8 +26,8 @@ def replace_ending_punctuation(title):
     
     return title
 
-# Apply the function to the Title column
-df['Title'] = df['Title'].apply(replace_ending_punctuation)
+# # Apply the function to the Title column
+# df['Title'] = df['Title'].apply(replace_ending_punctuation)
 
 # Remove duplicates based on Story content
 df_no_duplicates = df.drop_duplicates(subset=['Story'])
