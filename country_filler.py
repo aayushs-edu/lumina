@@ -10,7 +10,7 @@ OUTPUT_FILENAME = 'masterdb_updated.csv'
 # Set to True if you want to use the AI fallback method (requires your OpenAI API key)
 USE_AI_FALLBACK = True
 # Set your OpenAI API key if you plan to use the AI model:
-openai.api_key = os.getenv("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")  # or directly set: "your-key-here"
+openai.api_key = os.getenv("ÀPI-KEY")  # or directly set: "your-key-here"
 
 # ----- PREPARE COUNTRY DATA -----
 # Build a list of all country names using pycountry
