@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lumina/services/firebase_service.dart';
+import 'package:lumina/widgets/theme_tag.dart';
 import 'widgets/navbar.dart';
 import 'services/algolia_service.dart';
 import 'models/story_model.dart';
+
+class NoScrollbarBehavior extends ScrollBehavior {
+  @override
+  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+}
 
 class ExplorePage extends StatefulWidget {
   @override
@@ -48,6 +56,7 @@ class _ExplorePageState extends State<ExplorePage> {
         stories = results.map((map) => Story.fromMap(map)).toList();
         isLoading = false;
       });
+      print('Loaded ${stories.length} stories');
     } catch (e) {
       print('Error loading stories: $e');
       setState(() {
@@ -186,26 +195,28 @@ class _ExplorePageState extends State<ExplorePage> {
                     ? Center(child: CircularProgressIndicator())
                     : stories.isEmpty
                         ? Center(child: Text('No stories found'))
-                        : ListView.builder(
-                            itemCount: stories.length,
-                            itemBuilder: (context, index) {
-                              final story = stories[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: ExpandableStoryCard(
-                                  storyId: story.id,
-                                  title: story.title,
-                                  theme: story.themes.isNotEmpty ? story.themes[0] : 'Other',
-                                  themeColor: _getThemeColor(story.themes.isNotEmpty ? story.themes[0] : 'Other'),
-                                  country: story.country,
-                                  shortContent: story.story.length > 100
-                                      ? '${story.story.substring(0, 100)}...'
-                                      : story.story,
-                                  fullContent: story.story,
-                                  likes: story.likes,
-                                ),
-                              );
-                            },
+                        : ScrollConfiguration(
+                            behavior: NoScrollbarBehavior(),
+                            child: ListView.builder(
+                              itemCount: stories.length,
+                              itemBuilder: (context, index) {
+                                final story = stories[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: ExpandableStoryCard(
+                                    storyId: story.id,
+                                    title: story.title,
+                                    themes: story.themes.isNotEmpty ? story.themes : ['Other'],
+                                    country: story.country,
+                                    shortContent: story.story.length > 100
+                                        ? '${story.story.substring(0, 100)}...'
+                                        : story.story,
+                                    fullContent: story.story,
+                                    likes: story.likes,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
               ),
             ],
@@ -236,8 +247,7 @@ class _ExplorePageState extends State<ExplorePage> {
 class ExpandableStoryCard extends StatefulWidget {
   final String storyId;
   final String title;
-  final String theme;
-  final Color themeColor;
+  final List<String> themes;
   final String country;
   final String shortContent;
   final String fullContent;
@@ -247,8 +257,7 @@ class ExpandableStoryCard extends StatefulWidget {
     Key? key,
     required this.storyId,
     required this.title,
-    required this.theme,
-    required this.themeColor,
+    required this.themes,
     required this.country,
     required this.shortContent,
     required this.fullContent,
@@ -271,9 +280,6 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
     _likeCount = widget.likes;
   }
 
-  // Rest of your ExpandableStoryCard implementation remains the same
-  // Just update the like functionality to use Firebase
-
   void _toggleLike() async {
     setState(() {
       if (_isLiked) {
@@ -284,12 +290,10 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
       _isLiked = !_isLiked;
     });
     
-    // Update likes in Firestore
     try {
       await FirebaseService.updateLikes(widget.storyId, _likeCount);
     } catch (e) {
       print('Error updating likes: $e');
-      // Revert the state if there's an error
       setState(() {
         if (_isLiked) {
           _likeCount--;
@@ -301,148 +305,202 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
     }
   }
 
+  // Returns a list of border colors based on the story's themes using the mapping from ThemeTag.
+  List<Color> _getBorderColors() {
+    return widget.themes.map((tag) => ThemeTag.getColor(tag)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _isExpanded = !_isExpanded;
-          });
-        },
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 200),
-          transform: _isHovering && !_isExpanded
-              ? Matrix4.translationValues(0, -5, 0)
-              : Matrix4.translationValues(0, 0, 0),
-          decoration: BoxDecoration(
-            border: Border.all(color: widget.themeColor, width: 2),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: _isHovering || _isExpanded
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: Offset(0, 3),
-                    )
-                  ]
-                : [],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+    // Capture the content of the card without any external border decoration.
+    Widget cardContent = AnimatedContainer(
+      duration: Duration(milliseconds: 200),
+      transform: _isHovering && !_isExpanded
+          ? Matrix4.translationValues(0, -5, 0)
+          : Matrix4.translationValues(0, 0, 0),
+      // Note: No border here—this will be applied via a wrapper if needed.
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: _isHovering || _isExpanded
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: Offset(0, 3),
+                )
+              ]
+            : [],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Title and theme tag
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Text(
-                            '"${widget.title}"',
-                            style: GoogleFonts.baloo2(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: widget.themeColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              widget.theme,
-                              style: GoogleFonts.baloo2(
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+                // Title and theme tags
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        '"${widget.title}"',
+                        style: GoogleFonts.baloo2(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    // Country name
-                    Text(
-                      widget.country,
-                      style: GoogleFonts.baloo2(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
+                      SizedBox(width: 8),
+                      Wrap(
+                        spacing: 4,
+                        children: widget.themes
+                            .map((tag) => ThemeTag(theme: tag))
+                            .toList(),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                // Story content - short or full based on expansion state
-                Text(
-                  _isExpanded ? widget.fullContent : widget.shortContent,
-                  style: GoogleFonts.baloo2(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                    ],
                   ),
                 ),
-                SizedBox(height: 8),
-                // Like counter - clickable when expanded
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: _isExpanded
-                      ? GestureDetector(
-                          onTap: () {
-                            _toggleLike();
-                          },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '$_likeCount',
-                                style: GoogleFonts.baloo2(
-                                  fontSize: 16,
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Icon(
-                                _isLiked ? Icons.favorite : Icons.favorite_outline,
-                                color: Colors.red,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${widget.likes}',
-                              style: GoogleFonts.baloo2(
-                                fontSize: 16,
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.favorite,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                          ],
-                        ),
+                // Country name
+                Text(
+                  widget.country,
+                  style: GoogleFonts.baloo2(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
                 ),
               ],
             ),
-          ),
+            SizedBox(height: 8),
+            // Story content
+            Text(
+              _isExpanded ? widget.fullContent : widget.shortContent,
+              style: GoogleFonts.baloo2(
+                fontSize: 18,
+                color: Colors.grey[600],
+              ),
+            ),
+            SizedBox(height: 8),
+            // Like counter
+            Align(
+              alignment: Alignment.bottomRight,
+              child: _isExpanded
+                  ? GestureDetector(
+                      onTap: _toggleLike,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$_likeCount',
+                            style: GoogleFonts.baloo2(
+                              fontSize: 20,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            _isLiked ? Icons.favorite : Icons.favorite_outline,
+                            color: Colors.red,
+                            size: 24,
+                          ),
+                        ],
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${widget.likes}',
+                          style: GoogleFonts.baloo2(
+                            fontSize: 20,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+            ),
+          ],
         ),
       ),
     );
+
+    // Determine the border decoration based on the number of theme colors.
+    List<Color> borderColors = _getBorderColors();
+    if (borderColors.length >= 2) {
+      // Use a gradient border if two or more themes exist.
+      return MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [borderColors[0], borderColors[1]]),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Container(
+              margin: EdgeInsets.all(2), // Border width
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: cardContent,
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Use a single solid border if only one theme is present.
+      return MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 200),
+            transform: _isHovering && !_isExpanded
+                ? Matrix4.translationValues(0, -5, 0)
+                : Matrix4.translationValues(0, 0, 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                  color: borderColors.isNotEmpty ? borderColors.first : Colors.grey,
+                  width: 2),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: _isHovering || _isExpanded
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: Offset(0, 3),
+                      )
+                    ]
+                  : [],
+            ),
+            child: cardContent,
+          ),
+        ),
+      );
+    }
   }
 }

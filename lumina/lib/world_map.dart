@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lumina/services/firebase_service.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:xml/xml.dart';
 
@@ -238,26 +239,13 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   };
 
   // Map of hotspot countries with their severity levels and story counts
-  final Map<String, Map<String, dynamic>> _hotspotCountries = {
-    'US': {'severity': 'High', 'stories': 42},
-    'RU': {'severity': 'High', 'stories': 38},
-    'CN': {'severity': 'Medium', 'stories': 25},
-    'IN': {'severity': 'Medium', 'stories': 31},
-    'BR': {'severity': 'Medium', 'stories': 19},
-    'ZA': {'severity': 'Medium', 'stories': 15}, // South Africa
-    'NG': {'severity': 'High', 'stories': 20}, // Nigeria
-    'FR': {'severity': 'Medium', 'stories': 10}, // France
-    'DE': {'severity': 'Medium', 'stories': 12}, // Germany
-    'JP': {'severity': 'Low', 'stories': 5}, // Japan
-    'MX': {'severity': 'Medium', 'stories': 8}, // Mexico
-    // Add more countries as needed
-  };
+  Map<String, Map<String, dynamic>> _hotspotCountries = {};
 
   // Map severity levels to colors
   final Map<String, Color> _severityColors = {
     'High': const Color.fromARGB(255, 255, 20, 20),
     'Medium': const Color.fromARGB(255, 255, 102, 0),
-    'Low': const Color.fromARGB(255, 200, 200, 0),
+    'Low': const Color.fromARGB(255, 233, 202, 25), // Changed from Color.fromARGB(255, 200, 200, 0) to yellow
   };
 
   @override
@@ -267,9 +255,13 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    loadRegions().then((data) {
-      _regions = data;
-      setState(() {});
+    
+    // First load hotspot data, then reload regions
+    loadHotspotData().then((_) {
+      loadRegions().then((data) {
+        _regions = data;
+        setState(() {});
+      });
     });
   }
 
@@ -316,13 +308,11 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
       print('Processing path with id: $id, class: $className');
       // Get the ISO code for this country
       String isoCode = id ?? _countryToIso[className] ?? 'UNKNOWN_$pathIndex';
-
-      // Color hotspot countries with severity colors, others light gray
-      final color =
-          _hotspotCountries.containsKey(isoCode)
-              ? _severityColors[_hotspotCountries[isoCode]!['severity']] ??
-                  Colors.grey[200]!
-              : Colors.grey[200]!;
+      // If this country is a hotspot, use its assigned severity color; otherwise, use light gray.
+      final color = _hotspotCountries.containsKey(isoCode)
+          ? _severityColors[_hotspotCountries[isoCode]!['severity']] ??
+              Colors.grey[200]!
+          : Colors.grey[200]!;
 
       regions.add(Region(id: isoCode, path: partPath, color: color));
       pathIndex++;
@@ -330,6 +320,58 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
 
     print('Created ${regions.length} regions');
     return regions;
+  }
+
+  Future<void> loadHotspotData() async {
+    final stories = await FirebaseService.getAllStories();
+    Map<String, int> storyCounts = {};
+    Map<String, Map<String, int>> themeCounts = {};
+
+    for (var story in stories) {
+      String country = story['country'];
+      storyCounts[country] = (storyCounts[country] ?? 0) + 1;
+      if (story.containsKey('themes')) {
+        List<dynamic> themes = story['themes'];
+        for (var theme in themes) {
+          themeCounts[country] = themeCounts[country] ?? {};
+          themeCounts[country]![theme.toString()] = (themeCounts[country]![theme.toString()] ?? 0) + 1;
+        }
+      }
+    }
+
+    _hotspotCountries.clear();
+    storyCounts.forEach((country, count) {
+
+      // Determine severity based on thresholds
+      String severity;
+      if (count >= 20) {
+        severity = 'High';
+      } else if (count >= 5) {
+        severity = 'Medium';
+      } else {
+        severity = 'Low';
+      }
+
+      // Optionally, pick the most frequent theme
+      List<String> prominentThemes = [];
+      if (themeCounts.containsKey(country)) {
+        var entry = themeCounts[country]!.entries.reduce((a, b) => a.value >= b.value ? a : b);
+        prominentThemes.add(entry.key);
+      }
+
+      // Look up ISO code from your _countryToIso mapping
+      String? iso = _countryToIso[country];
+      if (iso != null) {
+        _hotspotCountries[iso] = {
+          'severity': severity,
+          'stories': count,
+          'themes': prominentThemes,
+          'countryName': country,
+        };
+      }
+    });
+
+    setState(() {});
   }
 
   @override
@@ -552,64 +594,21 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   }
 
   List<Widget> _getHotspotItems() {
-    return [
-      _HotspotItem(
-        country: "United States",
-        level: "High",
-        color: const Color.fromARGB(255, 255, 20, 20),
-      ),
-      _HotspotItem(
-        country: "Russia",
-        level: "High",
-        color: const Color.fromARGB(255, 255, 20, 20),
-      ),
-      _HotspotItem(
-        country: "China",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      _HotspotItem(
-        country: "India",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      _HotspotItem(
-        country: "Brazil",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      _HotspotItem(
-        country: "South Africa",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      _HotspotItem(
-        country: "Nigeria",
-        level: "High",
-        color: const Color.fromARGB(255, 255, 20, 20),
-      ),
-      _HotspotItem(
-        country: "France",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      _HotspotItem(
-        country: "Germany",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      _HotspotItem(
-        country: "Japan",
-        level: "Low",
-        color: const Color.fromARGB(255, 200, 200, 0),
-      ),
-      _HotspotItem(
-        country: "Mexico",
-        level: "Medium",
-        color: const Color.fromARGB(255, 255, 102, 0),
-      ),
-      // Add more countries as needed
-    ];
+    List<Widget> items = [];
+    _hotspotCountries.forEach((iso, data) {
+      String countryName = data['countryName'] ?? iso;
+      String severity = data['severity'];
+      int storyCount = data['stories'];
+      Color color = _severityColors[severity] ?? Colors.grey;
+      items.add(
+        _HotspotItem(
+          country: countryName,
+          level: severity,
+          color: color,
+        ),
+      );
+    });
+    return items;
   }
 
   Widget _getRegionImage(Region region) {
