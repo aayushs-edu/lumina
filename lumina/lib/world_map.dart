@@ -1,9 +1,12 @@
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:xml/xml.dart';
+import 'package:lumina/lib/models/gender_inequality_data.dart';
+import 'package:lumina/services/gender_inequality_data_manager.dart';
 
 class InteractiveWorldMap extends StatefulWidget {
   @override
@@ -31,212 +34,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   OverlayEntry? _tooltipOverlay;
 
   // Map of country names to ISO codes
-  final Map<String, String> _countryToIso = {
-    'United States': 'US',
-    'Russian Federation': 'RU',
-    'China': 'CN',
-    'India': 'IN',
-    'Brazil': 'BR',
-    'Canada': 'CA',
-    'Mexico': 'MX',
-    'Argentina': 'AR',
-    'United Kingdom': 'GB',
-    'France': 'FR',
-    'Germany': 'DE',
-    'Italy': 'IT',
-    'Spain': 'ES',
-    'Japan': 'JP',
-    'South Korea': 'KR',
-    'Australia': 'AU',
-    'South Africa': 'ZA',
-    'Nigeria': 'NG',
-    'Egypt': 'EG',
-    'Saudi Arabia': 'SA',
-    'Turkey': 'TR',
-    'Indonesia': 'ID',
-    'Pakistan': 'PK',
-    'Bangladesh': 'BD',
-    'Vietnam': 'VN',
-    'Thailand': 'TH',
-    'Philippines': 'PH',
-    'Malaysia': 'MY',
-    'Singapore': 'SG',
-    'New Zealand': 'NZ',
-    'Sweden': 'SE',
-    'Norway': 'NO',
-    'Finland': 'FI',
-    'Denmark': 'DK',
-    'Netherlands': 'NL',
-    'Belgium': 'BE',
-    'Switzerland': 'CH',
-    'Austria': 'AT',
-    'Poland': 'PL',
-    'Ukraine': 'UA',
-    'Romania': 'RO',
-    'Hungary': 'HU',
-    'Czech Republic': 'CZ',
-    'Greece': 'GR',
-    'Portugal': 'PT',
-    'Ireland': 'IE',
-    'Israel': 'IL',
-    'Iran': 'IR',
-    'Iraq': 'IQ',
-    'Afghanistan': 'AF',
-    'Kazakhstan': 'KZ',
-    'Uzbekistan': 'UZ',
-    'Turkmenistan': 'TM',
-    'Azerbaijan': 'AZ',
-    'Georgia': 'GE',
-    'Armenia': 'AM',
-    'Mongolia': 'MN',
-    'North Korea': 'KP',
-    'Myanmar': 'MM',
-    'Laos': 'LA',
-    'Cambodia': 'KH',
-    'Sri Lanka': 'LK',
-    'Nepal': 'NP',
-    'Bhutan': 'BT',
-    'Maldives': 'MV',
-    'Oman': 'OM',
-    'Yemen': 'YE',
-    'Qatar': 'QA',
-    'United Arab Emirates': 'AE',
-    'Kuwait': 'KW',
-    'Jordan': 'JO',
-    'Lebanon': 'LB',
-    'Syria': 'SY',
-    'Iceland': 'IS',
-    'Greenland': 'GL',
-    'Cuba': 'CU',
-    'Jamaica': 'JM',
-    'Haiti': 'HT',
-    'Dominican Republic': 'DO',
-    'Puerto Rico': 'PR',
-    'Colombia': 'CO',
-    'Venezuela': 'VE',
-    'Peru': 'PE',
-    'Ecuador': 'EC',
-    'Chile': 'CL',
-    'Bolivia': 'BO',
-    'Paraguay': 'PY',
-    'Uruguay': 'UY',
-    'Guyana': 'GY',
-    'Suriname': 'SR',
-    'Costa Rica': 'CR',
-    'Panama': 'PA',
-    'Nicaragua': 'NI',
-    'Honduras': 'HN',
-    'El Salvador': 'SV',
-    'Guatemala': 'GT',
-    'Belize': 'BZ',
-    'Morocco': 'MA',
-    'Algeria': 'DZ',
-    'Tunisia': 'TN',
-    'Libya': 'LY',
-    'Sudan': 'SD',
-    'South Sudan': 'SS',
-    'Ethiopia': 'ET',
-    'Somalia': 'SO',
-    'Kenya': 'KE',
-    'Tanzania': 'TZ',
-    'Uganda': 'UG',
-    'Rwanda': 'RW',
-    'Burundi': 'BI',
-    'Democratic Republic of the Congo': 'CD',
-    'Republic of the Congo': 'CG',
-    'Gabon': 'GA',
-    'Equatorial Guinea': 'GQ',
-    'Cameroon': 'CM',
-    'Central African Republic': 'CF',
-    'Chad': 'TD',
-    'Niger': 'NE',
-    'Mali': 'ML',
-    'Mauritania': 'MR',
-    'Senegal': 'SN',
-    'Gambia': 'GM',
-    'Guinea-Bissau': 'GW',
-    'Guinea': 'GN',
-    'Sierra Leone': 'SL',
-    'Liberia': 'LR',
-    'Côte d\'Ivoire': 'CI',
-    'Ghana': 'GH',
-    'Togo': 'TG',
-    'Benin': 'BJ',
-    'Burkina Faso': 'BF',
-    'Zambia': 'ZM',
-    'Zimbabwe': 'ZW',
-    'Malawi': 'MW',
-    'Mozambique': 'MZ',
-    'Madagascar': 'MG',
-    'Namibia': 'NA',
-    'Botswana': 'BW',
-    'Angola': 'AO',
-    'Eswatini': 'SZ',
-    'Lesotho': 'LS',
-    'Mauritius': 'MU',
-    'Comoros': 'KM',
-    'Seychelles': 'SC',
-    'Papua New Guinea': 'PG',
-    'Fiji': 'FJ',
-    'Solomon Islands': 'SB',
-    'Vanuatu': 'VU',
-    'Samoa': 'WS',
-    'Tonga': 'TO',
-    'Kiribati': 'KI',
-    'Tuvalu': 'TV',
-    'Nauru': 'NR',
-    'Marshall Islands': 'MH',
-    'Palau': 'PW',
-    'Micronesia': 'FM',
-    'Timor-Leste': 'TL',
-    'Brunei': 'BN',
-    'Taiwan': 'TW',
-    'Hong Kong': 'HK',
-    'Macau': 'MO',
-    'Cyprus': 'CY',
-    'Malta': 'MT',
-    'Luxembourg': 'LU',
-    'Liechtenstein': 'LI',
-    'Monaco': 'MC',
-    'San Marino': 'SM',
-    'Vatican City': 'VA',
-    'Andorra': 'AD',
-    'Albania': 'AL',
-    'North Macedonia': 'MK',
-    'Montenegro': 'ME',
-    'Bosnia and Herzegovina': 'BA',
-    'Serbia': 'RS',
-    'Croatia': 'HR',
-    'Slovenia': 'SI',
-    'Slovakia': 'SK',
-    'Lithuania': 'LT',
-    'Latvia': 'LV',
-    'Estonia': 'EE',
-    'Belarus': 'BY',
-    'Moldova': 'MD',
-    'Kyrgyzstan': 'KG',
-    'Tajikistan': 'TJ',
-    'East Timor': 'TL',
-    'Guam': 'GU',
-    'Northern Mariana Islands': 'MP',
-    'American Samoa': 'AS',
-    'Cook Islands': 'CK',
-    'Niue': 'NU',
-    'Tokelau': 'TK',
-    'Wallis and Futuna': 'WF',
-    'French Polynesia': 'PF',
-    'New Caledonia': 'NC',
-    'Pitcairn Islands': 'PN',
-    'Easter Island': 'CL',
-    'Galápagos Islands': 'EC',
-    'Falkland Islands': 'FK',
-    'South Georgia and the South Sandwich Islands': 'GS',
-    'Bouvet Island': 'BV',
-    'Heard Island and McDonald Islands': 'HM',
-    'French Southern and Antarctic Lands': 'TF',
-    'Antarctica': 'AQ',
-    'Svalbard and Jan Mayen': 'SJ',
-  };
+  late final Map<String, String> _countryToIso;
 
   // Map of hotspot countries with their severity levels and story counts
   Map<String, Map<String, dynamic>> _hotspotCountries = {};
@@ -256,6 +54,9 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
     
+    // Initialize _countryToIso map
+    _initializeCountryToIso();
+
     // First load hotspot data, then reload regions
     loadHotspotData().then((_) {
       loadRegions().then((data) {
@@ -263,6 +64,13 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
         setState(() {});
       });
     });
+  }
+
+  void _initializeCountryToIso() {
+    _countryToIso = {
+      for (var data in GenderInequalityDataManager().data)
+        data.country: _countryToIso[data.country] ?? 'UNKNOWN'
+    };
   }
 
   @override
@@ -324,6 +132,8 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
 
   Future<void> loadHotspotData() async {
     final stories = await FirebaseService.getAllStories();
+    await GenderInequalityDataManager().loadData(); // Ensure data is loaded
+    final giiData = GenderInequalityDataManager().data;
     Map<String, int> storyCounts = {};
     Map<String, Map<String, int>> themeCounts = {};
 
@@ -341,12 +151,15 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
 
     _hotspotCountries.clear();
     storyCounts.forEach((country, count) {
+      // Find the GII data for the country
+      final gii = giiData.firstWhere((data) => data.country == country, orElse: () => null);
+      double giiScore = gii?.genderInequalityIndex ?? 0.0;
 
       // Determine severity based on thresholds
       String severity;
-      if (count >= 20) {
+      if (count >= 20 || giiScore > 0.5) {
         severity = 'High';
-      } else if (count >= 5) {
+      } else if (count >= 5 || giiScore > 0.3) {
         severity = 'Medium';
       } else {
         severity = 'Low';
@@ -365,6 +178,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
         _hotspotCountries[iso] = {
           'severity': severity,
           'stories': count,
+          'giiScore': giiScore,
           'themes': prominentThemes,
           'countryName': country,
         };
@@ -372,6 +186,32 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
     });
 
     setState(() {});
+  }
+
+  Future<List<GenderInequalityData>> loadGenderInequalityData() async {
+    final String csvString = await rootBundle.loadString('assets/gii.csv');
+    final List<String> lines = LineSplitter.split(csvString).toList();
+    final List<GenderInequalityData> data = [];
+
+    for (int i = 1; i < lines.length; i++) { // Skip header
+      final List<String> values = lines[i].split(',');
+      if (values.length < 10) continue; // Ensure there are enough columns
+
+      data.add(GenderInequalityData(
+        hdiRank: int.tryParse(values[0]) ?? 0,
+        country: values[1],
+        genderInequalityIndex: double.tryParse(values[2]) ?? 0.0,
+        maternalMortality: double.tryParse(values[5]) ?? 0.0,
+        adolescentBirthRate: double.tryParse(values[7]) ?? 0.0,
+        parliamentSeatsWomen: double.tryParse(values[9]) ?? 0.0,
+        educationFemale: double.tryParse(values[11]) ?? 0.0,
+        educationMale: double.tryParse(values[12]) ?? 0.0,
+        labourForceFemale: double.tryParse(values[14]) ?? 0.0,
+        labourForceMale: double.tryParse(values[15]) ?? 0.0,
+      ));
+    }
+
+    return data;
   }
 
   @override
