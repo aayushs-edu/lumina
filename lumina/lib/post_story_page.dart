@@ -8,12 +8,26 @@ class PostStoryPage extends StatefulWidget {
 }
 
 class _PostStoryPageState extends State<PostStoryPage> {
-  String? selectedTheme;
+  String? selectedTheme1;
+  String? selectedTheme2; // Optional second theme
+  
   String? selectedCountry;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
+  final TextEditingController customTheme1Controller = TextEditingController();
+  final TextEditingController customTheme2Controller = TextEditingController();
 
-  final List<String> themes = ['Workplace', 'Domestic', 'Educational', 'Healthcare', 'Public Space', 'Other'];
+  // Updated themes list with all possible themes
+  final List<String> themes = [
+    'Workplace',
+    'Domestic',
+    'Education',
+    'Cultural',
+    'Public Space',
+    'Identity',
+    'Healthcare',
+    'Other'
+  ];
   final List<String> countries = [
     'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 
     'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 
@@ -45,7 +59,7 @@ class _PostStoryPageState extends State<PostStoryPage> {
   void _submitStory() async {
     if (titleController.text.isNotEmpty && 
         bodyController.text.isNotEmpty && 
-        selectedTheme != null && 
+        selectedTheme1 != null && 
         selectedCountry != null) {
       
       try {
@@ -56,13 +70,30 @@ class _PostStoryPageState extends State<PostStoryPage> {
           builder: (context) => Center(child: CircularProgressIndicator()),
         );
         
-        // Add story to Firestore
+        // Compose themes list with Theme 1 and Theme 2 (if selected)
+        List<String> themesSelected = [];
+        if (selectedTheme1 != null) {
+          if (selectedTheme1 == 'Other' && customTheme1Controller.text.isNotEmpty) {
+            themesSelected.add(customTheme1Controller.text);
+          } else {
+            themesSelected.add(selectedTheme1!);
+          }
+        }
+        if (selectedTheme2 != null) {
+          if (selectedTheme2 == 'Other' && customTheme2Controller.text.isNotEmpty) {
+            themesSelected.add(customTheme2Controller.text);
+          } else {
+            themesSelected.add(selectedTheme2!);
+          }
+        }
+        
+        // Add story to Firestore with updated themes list
         await FirebaseService.addStory(
           title: titleController.text,
           story: bodyController.text,
           country: selectedCountry!,
-          themes: [selectedTheme!],
-          keywords: [], // You could add keyword extraction here
+          themes: themesSelected,
+          keywords: [], // Optionally add keyword extraction here
         );
         
         // Hide loading indicator
@@ -86,7 +117,7 @@ class _PostStoryPageState extends State<PostStoryPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please fill in all fields")),
+        SnackBar(content: Text("Please fill in all required fields")),
       );
     }
   }
@@ -251,16 +282,15 @@ class _PostStoryPageState extends State<PostStoryPage> {
                   
                   // Theme and Country dropdowns
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Theme dropdown - reduced width
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.2, // About 1/4 of screen width
+                      // Clickable themes panel
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Theme",
+                              "Select up to 2 Themes",
                               style: TextStyle(
                                 color: Colors.black87,
                                 fontSize: 16,
@@ -268,43 +298,79 @@ class _PostStoryPageState extends State<PostStoryPage> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            Container(
-                              height: 45,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.black26),
-                              ),
-                              child: DropdownButtonFormField<String>(
-                                icon: Icon(Icons.arrow_drop_down, size: 20),
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  // Reduce vertical padding to prevent text from being cut off
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  border: InputBorder.none,
-                                ),
-                                hint: Text("Theme", style: TextStyle(fontSize: 13)),
-                                items: themes.map((String theme) {
-                                  return DropdownMenuItem<String>(
-                                    value: theme,
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: themes.map((theme) {
+                                // Check if theme is selected (either as Theme 1 or Theme 2)
+                                bool isSelected = (selectedTheme1 == theme || selectedTheme2 == theme);
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        // Unselect the theme if already selected
+                                        if (selectedTheme1 == theme) {
+                                          selectedTheme1 = null;
+                                          customTheme1Controller.clear();
+                                        } else if (selectedTheme2 == theme) {
+                                          selectedTheme2 = null;
+                                          customTheme2Controller.clear();
+                                        }
+                                      } else {
+                                        // If less than 2 themes are selected, add this theme
+                                        if (selectedTheme1 == null) {
+                                          selectedTheme1 = theme;
+                                        } else if (selectedTheme2 == null) {
+                                          selectedTheme2 = theme;
+                                        }
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? Colors.blue : Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
                                     child: Text(
                                       theme,
-                                      style: TextStyle(fontSize: 13),
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : Colors.black87,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  );
-                                }).toList(),
-                                onChanged: (String? value) {
-                                  setState(() {
-                                    selectedTheme = value;
-                                  });
-                                },
-                              ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
+                            // If user has selected "Other", show a text field for custom theme input
+                            if (selectedTheme1 == 'Other')
+                              Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: TextField(
+                                  controller: customTheme1Controller,
+                                  decoration: InputDecoration(
+                                    labelText: 'Enter custom theme for selection 1',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                              ),
+                            if (selectedTheme2 == 'Other')
+                              Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: TextField(
+                                  controller: customTheme2Controller,
+                                  decoration: InputDecoration(
+                                    labelText: 'Enter custom theme for selection 2',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
-                      
-                      // Country dropdown - reduced width and right-aligned
+                      SizedBox(width: 16),
+                      // Country dropdown – remains unchanged
                       Container(
                         width: MediaQuery.of(context).size.width * 0.2, // About 1/4 of screen width
                         child: Column(
@@ -323,7 +389,7 @@ class _PostStoryPageState extends State<PostStoryPage> {
                               height: 45,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.black26),
                               ),
                               child: DropdownButtonFormField<String>(
@@ -331,7 +397,6 @@ class _PostStoryPageState extends State<PostStoryPage> {
                                 isExpanded: true,
                                 alignment: AlignmentDirectional.centerEnd,
                                 decoration: InputDecoration(
-                                  // Reduce vertical padding to prevent text from being cut off
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   border: InputBorder.none,
                                 ),

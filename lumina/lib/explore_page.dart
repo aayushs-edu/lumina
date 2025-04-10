@@ -72,8 +72,17 @@ class _ExplorePageState extends State<ExplorePage> {
   }
   
   void _showFilterOptions() {
-    // Define available themes and countries
-    List<String> allThemes = ['Workplace', 'Domestic', 'Education', 'Healthcare', 'Public Space', 'Other'];
+    // Define available themes including Cultural and Identity
+    List<String> allThemes = [
+      'Workplace', 
+      'Domestic', 
+      'Education', 
+      'Healthcare', 
+      'Public Space', 
+      'Cultural', 
+      'Identity', 
+      'Other'
+    ];
     List<String> allCountries = [
       'United States', 'India', 'Russia', 'China', 'Japan', 
       'United Kingdom', 'Canada', 'Australia', 'Brazil', 'Mexico', 
