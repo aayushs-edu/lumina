@@ -281,17 +281,16 @@ class StoryPanelCard extends StatelessWidget {
                   ),
                   SizedBox(height: 10),  // Increased from 6 to 10
                   // Story content
-                  Expanded(
-                    child: Text(
-                      panel.content,
-                      style: GoogleFonts.baloo2(
-                        fontSize: 23,  // Increased from 13 to 23
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 3,  // Increased from 2 to 3 for better readability at larger size
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    panel.content,
+                    style: GoogleFonts.baloo2(
+                      fontSize: 23,  // Increased from 13 to 23
+                      color: Colors.grey[600],
                     ),
+                    maxLines: 1,  // Changed from 3 to 2
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  Spacer(),
                   // Country name in bottom right
                   Align(
                     alignment: Alignment.bottomRight,

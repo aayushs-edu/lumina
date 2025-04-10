@@ -22,8 +22,10 @@ class _ExplorePageState extends State<ExplorePage> {
   List<Story> stories = [];
   bool isLoading = true;
   String searchQuery = '';
-  String? selectedTheme;
-  String? selectedCountry;
+  
+  // Update these to handle multiple selections
+  List<String> selectedThemes = [];
+  List<String> selectedCountries = [];
   
   final TextEditingController searchController = TextEditingController();
   
@@ -41,11 +43,11 @@ class _ExplorePageState extends State<ExplorePage> {
     try {
       List<Map<String, dynamic>> results;
       
-      if (searchQuery.isNotEmpty || selectedTheme != null || selectedCountry != null) {
-        results = await AlgoliaService.searchWithFilters(
+      if (searchQuery.isNotEmpty || selectedThemes.isNotEmpty || selectedCountries.isNotEmpty) {
+        results = await AlgoliaService.searchWithMultipleFilters(
           query: searchQuery,
-          theme: selectedTheme,
-          country: selectedCountry,
+          themes: selectedThemes,
+          countries: selectedCountries,
         );
       } else {
         // Just get all stories
@@ -70,66 +72,244 @@ class _ExplorePageState extends State<ExplorePage> {
   }
   
   void _showFilterOptions() {
-    // Implement filter dialog
+    // Define available themes and countries
+    List<String> allThemes = ['Workplace', 'Domestic', 'Education', 'Healthcare', 'Public Space', 'Other'];
+    List<String> allCountries = [
+      'United States', 'India', 'Russia', 'China', 'Japan', 
+      'United Kingdom', 'Canada', 'Australia', 'Brazil', 'Mexico', 
+      'Germany', 'France', 'Italy', 'Spain', 'Saudi Arabia'
+    ];
+    
+    // Create local copies of the selections to work with in the dialog
+    List<String> tempSelectedThemes = List.from(selectedThemes);
+    List<String> tempSelectedCountries = List.from(selectedCountries);
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Filter Stories'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Theme dropdown
-            DropdownButton<String>(
-              isExpanded: true,
-              hint: Text('Select Theme'),
-              value: selectedTheme,
-              items: ['Workplace', 'Domestic', 'Educational', 'Healthcare', 'Public Space', 'Other', null]
-                  .map((theme) => DropdownMenuItem(
-                        value: theme,
-                        child: Text(theme ?? 'All Themes'),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedTheme = value;
-                });
-              },
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
             ),
-            SizedBox(height: 16),
-            // Country dropdown
-            DropdownButton<String>(
-              isExpanded: true,
-              hint: Text('Select Country'),
-              value: selectedCountry,
-              items: ['India', 'Saudi Arabia', 'United States', 'Other', null]
-                  .map((country) => DropdownMenuItem(
-                        value: country,
-                        child: Text(country ?? 'All Countries'),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedCountry = value;
-                });
-              },
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.8,
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Filter Stories',
+                    style: TextStyle(
+                      fontSize: 22, 
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.6,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left column - Theme Tags
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Theme',
+                                    style: TextStyle(
+                                      fontSize: 18, 
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  Spacer(),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        if (tempSelectedThemes.length == allThemes.length) {
+                                          tempSelectedThemes.clear();
+                                        } else {
+                                          tempSelectedThemes = List.from(allThemes);
+                                        }
+                                      });
+                                    },
+                                    child: Text(
+                                      tempSelectedThemes.length == allThemes.length ? 'Clear All' : 'Select All'
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: allThemes.map((theme) {
+                                      bool isSelected = tempSelectedThemes.contains(theme);
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (isSelected) {
+                                              tempSelectedThemes.remove(theme);
+                                            } else {
+                                              tempSelectedThemes.add(theme);
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          margin: EdgeInsets.only(bottom: 10),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 16, 
+                                              vertical: 8
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isSelected 
+                                                  ? ThemeTag.getColor(theme) 
+                                                  : Colors.grey.shade200,
+                                              borderRadius: BorderRadius.circular(30),
+                                            ),
+                                            child: Text(
+                                              theme,
+                                              style: TextStyle(
+                                                color: isSelected 
+                                                    ? Colors.white 
+                                                    : Colors.black87,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 20),
+                        // Right column - Country Checkboxes
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Country',
+                                    style: TextStyle(
+                                      fontSize: 18, 
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        if (tempSelectedCountries.length == allCountries.length) {
+                                          tempSelectedCountries.clear();
+                                        } else {
+                                          tempSelectedCountries = List.from(allCountries);
+                                        }
+                                      });
+                                    },
+                                    child: Text(
+                                      tempSelectedCountries.length == allCountries.length ? 'Clear All' : 'Select All'
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  child: Wrap(
+                                    spacing: 10.0,
+                                    runSpacing: 0.0,
+                                    children: allCountries.map((country) {
+                                      return SizedBox(
+                                        width: MediaQuery.of(context).size.width * 0.2,
+                                        child: CheckboxListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          dense: true,
+                                          title: Text(
+                                            country,
+                                            style: TextStyle(fontSize: 14),
+                                          ),
+                                          value: tempSelectedCountries.contains(country),
+                                          controlAffinity: ListTileControlAffinity.leading,
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              if (value == true) {
+                                                tempSelectedCountries.add(country);
+                                              } else {
+                                                tempSelectedCountries.remove(country);
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text('Cancel'),
+                      ),
+                      SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Update the main state with the temporary selections
+                          this.selectedThemes = tempSelectedThemes;
+                          this.selectedCountries = tempSelectedCountries;
+                          
+                          Navigator.of(context).pop();
+                          _loadStories();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            'Apply',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _loadStories();
-            },
-            child: Text('Apply'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -379,9 +559,10 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
             Text(
               _isExpanded ? widget.fullContent : widget.shortContent,
               style: GoogleFonts.baloo2(
-                fontSize: 18,
+                fontSize: 22, // increased font size for better readability
                 color: Colors.grey[600],
               ),
+              textAlign: TextAlign.justify, // stretches text nicely across the panel
             ),
             SizedBox(height: 8),
             // Like counter
