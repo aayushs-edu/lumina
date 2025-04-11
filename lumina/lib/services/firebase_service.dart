@@ -5,7 +5,9 @@ import 'package:csv/csv.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static final CollectionReference _storiesCollection = _firestore.collection('stories');
+  static final CollectionReference _storiesCollection = _firestore.collection(
+    'stories',
+  );
 
   // Initialize Firebase
   static Future<void> initializeFirebase() async {
@@ -17,31 +19,34 @@ class FirebaseService {
     try {
       final File file = File(filePath);
       final String csvData = await file.readAsString();
-      final List<List<dynamic>> csvTable = const CsvToListConverter().convert(csvData);
-      
+      final List<List<dynamic>> csvTable = const CsvToListConverter().convert(
+        csvData,
+      );
+
       // Assuming first row is header
-      final List<String> headers = csvTable[0].map((header) => header.toString()).toList();
+      final List<String> headers =
+          csvTable[0].map((header) => header.toString()).toList();
 
       for (int i = 1; i < csvTable.length; i++) {
         final Map<String, dynamic> storyData = {};
-        
+
         for (int j = 0; j < headers.length; j++) {
           storyData[headers[j]] = csvTable[i][j];
         }
-        
+
         // Add timestamp if not present
         if (!storyData.containsKey('timestamp')) {
           storyData['timestamp'] = DateTime.now().toIso8601String();
         }
-        
+
         // Add userId if not present
         if (!storyData.containsKey('userId')) {
           storyData['userId'] = "anonymous";
         }
-        
+
         await _storiesCollection.add(storyData);
       }
-      
+
       print("CSV data uploaded successfully!");
     } catch (e) {
       print("Error uploading CSV data: $e");
@@ -84,7 +89,9 @@ class FirebaseService {
   }
 
   // Get stories by theme with cleaned themes
-  static Future<List<Map<String, dynamic>>> getStoriesByTheme(String theme) async {
+  static Future<List<Map<String, dynamic>>> getStoriesByTheme(
+    String theme,
+  ) async {
     QuerySnapshot querySnapshot =
         await _storiesCollection.where('themes', arrayContains: theme).get();
     return querySnapshot.docs.map((doc) {
@@ -102,21 +109,21 @@ class FirebaseService {
   // Get random stories with cleaned themes
   static Future<List<Map<String, dynamic>>> getRandomStories(int limit) async {
     QuerySnapshot querySnapshot = await _storiesCollection.get();
-    List<Map<String, dynamic>> stories = querySnapshot.docs.map((doc) {
-      Map<String, dynamic> data = {
-        'id': doc.id,
-        ...doc.data() as Map<String, dynamic>,
-      };
-      if (data.containsKey('themes') && data['themes'] is List) {
-        data['themes'] = _cleanThemes(data['themes']);
-      }
-      return data;
-    }).toList();
-    
+    List<Map<String, dynamic>> stories =
+        querySnapshot.docs.map((doc) {
+          Map<String, dynamic> data = {
+            'id': doc.id,
+            ...doc.data() as Map<String, dynamic>,
+          };
+          if (data.containsKey('themes') && data['themes'] is List) {
+            data['themes'] = _cleanThemes(data['themes']);
+          }
+          return data;
+        }).toList();
+
     stories.shuffle();
     return stories.take(limit).toList();
   }
-
 
   // Add a new story
   static Future<void> addStory({
@@ -143,5 +150,17 @@ class FirebaseService {
   // Update likes
   static Future<void> updateLikes(String storyId, int likes) async {
     await _storiesCollection.doc(storyId).update({'likes': likes});
+  }
+
+  Future<int> getStoryCountForCountry(String country) async {
+    try {
+      final QuerySnapshot snapshot =
+          await _storiesCollection.where('country', isEqualTo: country).get();
+
+      return snapshot.docs.length;
+    } catch (e) {
+      print('Error getting story count for $country: $e');
+      return 0;
+    }
   }
 }

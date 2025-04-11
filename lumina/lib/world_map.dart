@@ -5,8 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:xml/xml.dart';
-import 'package:lumina/lib/models/gender_inequality_data.dart';
-import 'package:lumina/services/gender_inequality_data_manager.dart';
+import 'package:lumina/models/gender_inequality_data.dart';
 
 class InteractiveWorldMap extends StatefulWidget {
   @override
@@ -26,24 +25,27 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   List<Region> _regions = [];
   final Random random = Random();
   late AnimationController _gradientController;
-  
-  // Tooltip state variables
+
+  // Tooltip state
   bool _tooltipVisible = false;
   String? _hoveredCountryId;
   Offset _tooltipPosition = Offset.zero;
   OverlayEntry? _tooltipOverlay;
 
+  // Panel state
+  String? _selectedCountry;
+  GenderInequalityData? _selectedCountryData;
+
   // Map of country names to ISO codes
   late final Map<String, String> _countryToIso;
 
-  // Map of hotspot countries with their severity levels and story counts
-  Map<String, Map<String, dynamic>> _hotspotCountries = {};
-
   // Map severity levels to colors
-  final Map<String, Color> _severityColors = {
-    'High': const Color.fromARGB(255, 255, 20, 20),
-    'Medium': const Color.fromARGB(255, 255, 102, 0),
-    'Low': const Color.fromARGB(255, 233, 202, 25), // Changed from Color.fromARGB(255, 200, 200, 0) to yellow
+  final Map<HotspotLevel, Color> _hotspotColors = {
+    HotspotLevel.extreme: const Color.fromARGB(255, 128, 0, 128), // Purple
+    HotspotLevel.high: const Color.fromARGB(255, 255, 0, 0), // Red
+    HotspotLevel.medium: const Color.fromARGB(255, 255, 165, 0), // Orange
+    HotspotLevel.low: const Color.fromARGB(255, 255, 230, 4), // Yellow
+    HotspotLevel.none: Colors.grey[200]!, // Light gray
   };
 
   @override
@@ -53,15 +55,22 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    
-    // Initialize _countryToIso map
-    _initializeCountryToIso();
 
-    // First load hotspot data, then reload regions
-    loadHotspotData().then((_) {
-      loadRegions().then((data) {
-        _regions = data;
-        setState(() {});
+    // Load GII data and then initialize _countryToIso and regions.
+    GenderInequalityDataManager().loadData().then((_) {
+      // Initialize _countryToIso after data is loaded
+      setState(() {
+        _initializeCountryToIso();
+      });
+
+      loadRegions().then((regionsData) {
+        setState(() {
+          _regions = regionsData;
+          // Ensure the overlay is initialized if regions are present
+          if (_regions.isNotEmpty) {
+            // Trigger rebuild if necessary
+          }
+        });
       });
     });
   }
@@ -69,348 +78,81 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   void _initializeCountryToIso() {
     _countryToIso = {
       for (var data in GenderInequalityDataManager().data)
-        data.country: _countryToIso[data.country] ?? 'UNKNOWN'
+        data.country: data.isoCode,
     };
   }
 
-  @override
-  void dispose() {
-    _hideTooltip();
-    _gradientController.dispose();
-    super.dispose();
+  // Helper to get country name from ISO code
+  String? _getCountryNameFromIso(String id) {
+    // By our new approach, the region id is the country name.
+    return id;
   }
 
-  Color _getRandomRedShade() {
-    // Generate random red shade between 100-255 for vibrancy
-    final red =
-        100 + random.nextInt(156); // This ensures red is between 100-255
-    // Keep some minimal green and blue for better visibility
-    final greenBlue =
-        20 + random.nextInt(30); // This keeps green/blue low but not zero
-    return Color.fromRGBO(red, greenBlue, greenBlue, 1.0);
-  }
-
-  loadRegions() async {
-    // Load the SVG file
-    final String svgString = await rootBundle.loadString('assets/world.svg');
-    final document = XmlDocument.parse(svgString);
-
-    // Find all path elements in the SVG
-    final paths = document.findAllElements('path');
-    final regions = <Region>[];
-
-    print('Found ${paths.length} paths in SVG');
-
-    // Process each path to extract country data
-    int pathIndex = 0;
-    for (var path in paths) {
-      final id = path.getAttribute('id');
-      final className = path.getAttribute('class');
-      final partPath = path.getAttribute('d') ?? '';
-
-      // Skip empty paths
-      if (partPath.isEmpty) {
-        print('Skipping empty path at index $pathIndex');
-        continue;
-      }
-      print('Processing path with id: $id, class: $className');
-      // Get the ISO code for this country
-      String isoCode = id ?? _countryToIso[className] ?? 'UNKNOWN_$pathIndex';
-      // If this country is a hotspot, use its assigned severity color; otherwise, use light gray.
-      final color = _hotspotCountries.containsKey(isoCode)
-          ? _severityColors[_hotspotCountries[isoCode]!['severity']] ??
-              Colors.grey[200]!
-          : Colors.grey[200]!;
-
-      regions.add(Region(id: isoCode, path: partPath, color: color));
-      pathIndex++;
-    }
-
-    print('Created ${regions.length} regions');
-    return regions;
-  }
-
-  Future<void> loadHotspotData() async {
-    final stories = await FirebaseService.getAllStories();
-    await GenderInequalityDataManager().loadData(); // Ensure data is loaded
-    final giiData = GenderInequalityDataManager().data;
-    Map<String, int> storyCounts = {};
-    Map<String, Map<String, int>> themeCounts = {};
-
-    for (var story in stories) {
-      String country = story['country'];
-      storyCounts[country] = (storyCounts[country] ?? 0) + 1;
-      if (story.containsKey('themes')) {
-        List<dynamic> themes = story['themes'];
-        for (var theme in themes) {
-          themeCounts[country] = themeCounts[country] ?? {};
-          themeCounts[country]![theme.toString()] = (themeCounts[country]![theme.toString()] ?? 0) + 1;
-        }
-      }
-    }
-
-    _hotspotCountries.clear();
-    storyCounts.forEach((country, count) {
-      // Find the GII data for the country
-      final gii = giiData.firstWhere((data) => data.country == country, orElse: () => null);
-      double giiScore = gii?.genderInequalityIndex ?? 0.0;
-
-      // Determine severity based on thresholds
-      String severity;
-      if (count >= 20 || giiScore > 0.5) {
-        severity = 'High';
-      } else if (count >= 5 || giiScore > 0.3) {
-        severity = 'Medium';
-      } else {
-        severity = 'Low';
-      }
-
-      // Optionally, pick the most frequent theme
-      List<String> prominentThemes = [];
-      if (themeCounts.containsKey(country)) {
-        var entry = themeCounts[country]!.entries.reduce((a, b) => a.value >= b.value ? a : b);
-        prominentThemes.add(entry.key);
-      }
-
-      // Look up ISO code from your _countryToIso mapping
-      String? iso = _countryToIso[country];
-      if (iso != null) {
-        _hotspotCountries[iso] = {
-          'severity': severity,
-          'stories': count,
-          'giiScore': giiScore,
-          'themes': prominentThemes,
-          'countryName': country,
-        };
-      }
-    });
-
-    setState(() {});
-  }
-
-  Future<List<GenderInequalityData>> loadGenderInequalityData() async {
-    final String csvString = await rootBundle.loadString('assets/gii.csv');
-    final List<String> lines = LineSplitter.split(csvString).toList();
-    final List<GenderInequalityData> data = [];
-
-    for (int i = 1; i < lines.length; i++) { // Skip header
-      final List<String> values = lines[i].split(',');
-      if (values.length < 10) continue; // Ensure there are enough columns
-
-      data.add(GenderInequalityData(
-        hdiRank: int.tryParse(values[0]) ?? 0,
-        country: values[1],
-        genderInequalityIndex: double.tryParse(values[2]) ?? 0.0,
-        maternalMortality: double.tryParse(values[5]) ?? 0.0,
-        adolescentBirthRate: double.tryParse(values[7]) ?? 0.0,
-        parliamentSeatsWomen: double.tryParse(values[9]) ?? 0.0,
-        educationFemale: double.tryParse(values[11]) ?? 0.0,
-        educationMale: double.tryParse(values[12]) ?? 0.0,
-        labourForceFemale: double.tryParse(values[14]) ?? 0.0,
-        labourForceMale: double.tryParse(values[15]) ?? 0.0,
-      ));
-    }
-
-    return data;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          "Inequality Atlas",
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 40,
-            fontWeight: FontWeight.w600,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: 24),
-        Container(
-          height: 500, // Fixed height to prevent layout constraints issues
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Map in white panel - 85%
-              Expanded(
-                flex: 85,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color.fromARGB(
-                        255,
-                        255,
-                        20,
-                        20,
-                      ).withOpacity(0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        spreadRadius: 0,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(16),
-                  child: _regions.isEmpty
-                      ? Center(child: CircularProgressIndicator())
-                      : FittedBox(
-                          fit: BoxFit.contain,
-                          child: SizedBox(
-                            width: 1000, // Fixed reference size
-                            height: 450, // Fixed reference size
-                            child: Stack(
-                              children: [
-                                ..._regions.map((region) {
-                                  return _getRegionImage(region);
-                                }),
-                              ],
-                            ),
-                          ),
-                        ),
-                ),
-              ),
-              SizedBox(width: 12),
-              // Hotspots Panel - 15%
-              Expanded(
-                flex: 15,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color.fromARGB(
-                        255,
-                        255,
-                        20,
-                        20,
-                      ).withOpacity(0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromARGB(
-                          255,
-                          255,
-                          20,
-                          20,
-                        ).withOpacity(0.1),
-                        blurRadius: 8,
-                        spreadRadius: 0,
-                        offset: Offset(0, 0),
-                      ),
-                    ],
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Inequality Hotspots",
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 20),
-                        ..._getHotspotItems(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Show tooltip using Overlay
   void _showTooltip(BuildContext context, Offset position, String countryId) {
     // Hide any existing tooltip first
     _hideTooltip();
-    
-    // Only show tooltip for hotspot countries
-    if (!_hotspotCountries.containsKey(countryId)) {
-      return;
-    }
-    
-    // Get country name from ISO code
-    final countryName = _countryToIso.entries
-        .firstWhere((entry) => entry.value == countryId, 
-                  orElse: () => MapEntry(countryId, countryId))
-        .key;
-        
-    // Get severity color
-    final severity = _hotspotCountries[countryId]?['severity'] ?? 'Low';
-    final severityColor = _severityColors[severity] ?? Colors.grey;
-    
+
+    final countryName = _getCountryNameFromIso(countryId);
+    if (countryName == null) return;
+
+    final giiData = GenderInequalityDataManager().getDataForCountry(
+      countryName,
+    );
+    if (giiData == null) return;
+
     // Create overlay entry
     _tooltipOverlay = OverlayEntry(
-      builder: (context) => Positioned(
-        left: position.dx + 10, // Offset to prevent cursor overlap
-        top: position.dy + 10,
-        child: Material(
-          elevation: 4.0,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: EdgeInsets.all(12),
-            constraints: BoxConstraints(maxWidth: 200),
-            decoration: BoxDecoration(
-              color: Colors.white,
+      builder:
+          (context) => Positioned(
+            left: position.dx + 10, // Offset to prevent cursor overlap
+            top: position.dy + 10,
+            child: Material(
+              elevation: 4.0,
               borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Inequality Hotspot',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: severityColor,
-                  ),
+              child: Container(
+                padding: EdgeInsets.all(12),
+                constraints: BoxConstraints(maxWidth: 200),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  countryName,
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      countryName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'GII Score: ${giiData.genderInequalityIndex.toStringAsFixed(3)}',
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                    Text(
+                      'Level: ${_getLevelName(giiData.hotspotLevel)}',
+                      style: TextStyle(
+                        color: _hotspotColors[giiData.hotspotLevel],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Stories: ${_hotspotCountries[countryId]?['stories'] ?? 0}',
-                  style: TextStyle(color: Colors.black87),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
     );
-    
+
     // Insert the overlay
     Overlay.of(context).insert(_tooltipOverlay!);
     _tooltipVisible = true;
     _hoveredCountryId = countryId;
     _tooltipPosition = position;
   }
-  
+
   // Hide tooltip
   void _hideTooltip() {
     if (_tooltipOverlay != null) {
@@ -433,22 +175,272 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
     }
   }
 
-  List<Widget> _getHotspotItems() {
-    List<Widget> items = [];
-    _hotspotCountries.forEach((iso, data) {
-      String countryName = data['countryName'] ?? iso;
-      String severity = data['severity'];
-      int storyCount = data['stories'];
-      Color color = _severityColors[severity] ?? Colors.grey;
-      items.add(
-        _HotspotItem(
-          country: countryName,
-          level: severity,
-          color: color,
+  void _updateSelectedCountry(String countryName) async {
+    final giiData = GenderInequalityDataManager().getDataForCountry(
+      countryName,
+    );
+    setState(() {
+      _selectedCountry = countryName;
+      _selectedCountryData = giiData;
+    });
+  }
+
+  Widget _buildCountryInfoPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hotspots',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        SizedBox(height: 12),
+        ..._getLegendItems(),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _hideTooltip();
+    _gradientController.dispose();
+    super.dispose();
+  }
+
+  Future<List<Region>> loadRegions() async {
+    print('Starting to load regions...'); // Progress print
+    // Load the SVG file
+    final String svgString = await rootBundle.loadString('assets/world.svg');
+    final document = XmlDocument.parse(svgString);
+
+    // Find all path elements in the SVG
+    final paths = document.findAllElements('path');
+    final regions = <Region>[];
+    int initializedCount = 0;
+    int unknownCount = 0;
+
+    // Get all GII data for quick lookup
+    final giiData = GenderInequalityDataManager().data;
+    final giiCountryMap = {
+      for (var data in giiData) data.country: data,
+    };
+
+    // Create a map of alternative names
+    final alternativeNames = {
+      'united states': 'United States',
+      'united kingdom': 'United Kingdom',
+      'russian federation': 'Russian Federation',
+      'congo, democratic republic of the': 'Democratic Republic of the Congo',
+      'congo, republic of the': 'Republic of the Congo',
+      'côte d\'ivoire': 'Côte d\'Ivoire',
+      'korea, republic of': 'South Korea',
+      'korea, democratic people\'s republic of': 'North Korea',
+      'tanzania, united republic of': 'Tanzania',
+      'venezuela, bolivarian republic of': 'Venezuela',
+      'syrian arab republic': 'Syria',
+      'lao people\'s democratic republic': 'Laos',
+      'myanmar': 'Myanmar',
+      'czech republic': 'Czechia',
+      'macedonia, the former yugoslav republic of': 'North Macedonia',
+      'palestine, state of': 'Palestine',
+      'türkiye': 'Turkey',
+      'viet nam': 'Vietnam',
+    };
+
+    for (var path in paths) {
+      final id = path.getAttribute('id');
+      final className = path.getAttribute('class');
+      final partPath = path.getAttribute('d') ?? '';
+
+      // Skip empty paths
+      if (partPath.isEmpty) continue;
+
+      // Try to find matching country data
+      GenderInequalityData? giiData;
+      String? countryName;
+      String isoCode = id ?? className ?? 'UNKNOWN';
+
+      // Try matching by ISO code directly.
+      for (var data in giiCountryMap.values) {
+        if (data.isoCode.toLowerCase() == (isoCode).toLowerCase()) {
+          giiData = data;
+          break;
+        }
+      }
+
+      // If no match, check for alternative names.
+      if (giiData == null) {
+        final lowerIso = isoCode.toLowerCase();
+        if (alternativeNames.containsKey(lowerIso)) {
+          final properName = alternativeNames[lowerIso]!;
+          giiData = giiCountryMap[properName];
+        }
+      }
+
+      if (giiData != null) {
+        countryName = giiData.country;
+      }
+      
+      final hotspotLevel = giiData?.hotspotLevel ?? HotspotLevel.none;
+      final color = _hotspotColors[hotspotLevel] ?? Colors.grey[200]!;
+
+      final regionId = countryName ?? isoCode; // use actual country name if available
+      regions.add(Region(id: regionId, path: partPath, color: color));
+
+      if (giiData != null) {
+        initializedCount++;
+      } else {
+        unknownCount++;
+      }
+    }
+
+    print(
+      'Finished loading regions. Total regions: ${regions.length}',
+    ); // Progress print
+    return regions;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          "Inequality Atlas",
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: 40,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 24),
+        Container(
+          height: 500,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Map in white panel - now takes up 90%
+              Expanded(
+                flex: 9,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color.fromARGB(255, 128, 0, 128)
+                          .withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        spreadRadius: 0,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.all(16),
+                  child: _regions.isEmpty
+                      ? Center(child: CircularProgressIndicator())
+                      : FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: 1000,
+                            height: 450,
+                            child: Stack(
+                              children: [
+                                ..._regions.map((region) {
+                                  return _getRegionImage(region);
+                                }),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+              SizedBox(width: 8),
+              // Country Info Panel - now takes up 10%
+              Expanded(
+                flex: 1,
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color.fromARGB(255, 128, 0, 128)
+                          .withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 128, 0, 128)
+                            .withOpacity(0.1),
+                        blurRadius: 8,
+                        spreadRadius: 0,
+                        offset: Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                  child: _buildCountryInfoPanel(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _getLegendItems() {
+    return HotspotLevel.values.map((level) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _hotspotColors[level],
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _getLevelName(level),
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       );
-    });
-    return items;
+    }).toList();
+  }
+
+  String _getLevelName(HotspotLevel level) {
+    switch (level) {
+      case HotspotLevel.extreme:
+        return "Extreme";
+      case HotspotLevel.high:
+        return "High";
+      case HotspotLevel.medium:
+        return "Medium";
+      case HotspotLevel.low:
+        return "Low";
+      case HotspotLevel.none:
+        return "No Data";
+    }
   }
 
   Widget _getRegionImage(Region region) {
@@ -478,8 +470,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                print('Tapped on ${region.id}');
-                // Add your tap action here if needed
+                _showCountryDetails(region.id);
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -495,11 +486,354 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
       ),
     );
   }
+
+  void _showCountryDetails(String countryId) {
+    print('Attempting to show country details for: $countryId'); // Debug print
+    final countryName = _getCountryNameFromIso(countryId);
+    print('Country name from ISO: $countryName'); // Debug print
+    if (countryName == null) return;
+
+    final giiData = GenderInequalityDataManager().getDataForCountry(countryName);
+    print('GII data found: ${giiData != null}'); // Debug print
+    if (giiData == null) return;
+
+    // Get the hotspot color for this country
+    final Color hotspotColor = _hotspotColors[giiData.hotspotLevel] ?? Colors.grey[200]!;
+
+    try {
+      print('Showing dialog'); // Debug print
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            width: 500,
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with country name and close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      countryName,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.black54),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                
+                // Hotspot level indicator
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: hotspotColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: hotspotColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    _getLevelName(giiData.hotspotLevel),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: hotspotColor,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 24),
+                
+                // Main metrics in a row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // GII Score
+                    _buildMetricBox(
+                      "GII Score",
+                      giiData.genderInequalityIndex.toStringAsFixed(3),
+                      hotspotColor,
+                    ),
+                    
+                    // Rank
+                    _buildMetricBox(
+                      "Rank",
+                      "${giiData.hdiRank}/${GenderInequalityDataManager().data.length}",
+                      hotspotColor,
+                    ),
+                    
+                    // Stories
+                    _buildMetricBox(
+                      "Stories",
+                      "${giiData.storyCount}",
+                      hotspotColor,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 32),
+                
+                // Divider
+                Divider(color: Colors.grey[300], thickness: 1),
+                SizedBox(height: 24),
+                
+                // Section title
+                Text(
+                  "Gender Inequality Metrics",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 16),
+                
+                // Detailed metrics
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left column
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailedMetric(
+                            "Maternal Mortality",
+                            "${giiData.maternalMortality}%",
+                            hotspotColor,
+                          ),
+                          SizedBox(height: 16),
+                          _buildDetailedMetric(
+                            "Adolescent Birth Rate",
+                            "${giiData.adolescentBirthRate}%",
+                            hotspotColor,
+                          ),
+                          SizedBox(height: 16),
+                          _buildDetailedMetric(
+                            "Parliament Seats (Women)",
+                            "${giiData.parliamentSeatsWomen}%",
+                            hotspotColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 24),
+                    // Right column
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Education comparison
+                          _buildComparisonMetric(
+                            "Secondary Education",
+                            "Female: ${giiData.educationFemale}%",
+                            "Male: ${giiData.educationMale}%",
+                            hotspotColor,
+                          ),
+                          SizedBox(height: 16),
+                          // Labour force comparison
+                          _buildComparisonMetric(
+                            "Labour Force",
+                            "Female: ${giiData.labourForceFemale}%",
+                            "Male: ${giiData.labourForceMale}%",
+                            hotspotColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      );
+      print('Dialog shown successfully'); // Debug print
+    } catch (e) {
+      print('Error showing dialog: $e'); // Debug print
+    }
+  }
+
+  // Helper method to build the metric boxes at the top
+  Widget _buildMetricBox(String label, String value, Color accentColor) {
+    return Container(
+      width: 140,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: accentColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper method to build detailed metrics with icons
+  Widget _buildDetailedMetric(String label, String value, Color accentColor) {
+    return Row(
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 20,
+          color: accentColor,
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper method to build comparison metrics (male vs female)
+  Widget _buildComparisonMetric(String label, String value1, String value2, Color accentColor) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.woman,
+                size: 20,
+                color: accentColor,
+              ),
+              SizedBox(width: 8),
+              Text(
+                value1,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.man,
+                size: 20,
+                color: Colors.blue[700],
+              ),
+              SizedBox(width: 8),
+              Text(
+                value2,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, TextStyle labelStyle, TextStyle valueStyle) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: labelStyle,
+          ),
+          Text(
+            value,
+            style: valueStyle,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class RegionClipper extends CustomClipper<Path> {
   final String path;
-  // Original SVG viewBox dimensions
   static const originalWidth = 2000.0;
   static const originalHeight = 1001.0;
 
@@ -508,69 +842,15 @@ class RegionClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final pathData = parseSvgPathData(path);
-
-    // Calculate scale to fit container
     final scaleX = size.width / originalWidth;
     final scaleY = size.height / originalHeight;
-
-    // Use uniform scaling to maintain aspect ratio
     final scale = min(scaleX, scaleY);
-
-    // Create transformation matrix
     final matrix = Matrix4.identity()..scale(scale, scale);
-
     return pathData.transform(matrix.storage);
   }
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
     return false;
-  }
-}
-
-class _HotspotItem extends StatelessWidget {
-  final String country;
-  final String level;
-  final Color color;
-
-  const _HotspotItem({
-    required this.country,
-    required this.level,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              country,
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Text(
-            level,
-            style: TextStyle(
-              color: color,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
