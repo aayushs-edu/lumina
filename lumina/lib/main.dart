@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lumina/firebase_options.dart';
+import 'package:lumina/services/firebase_service.dart';
 import 'package:lumina/world_map.dart';
 import 'todays_topic_page.dart';
 import 'post_story_page.dart';
@@ -69,7 +70,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _gradientController;
-
+  String? spotlightTheme;  // New state for today's spotlight theme
+  
   @override
   void initState() {
     super.initState();
@@ -77,14 +79,37 @@ class _HomePageState extends State<HomePage>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+    _loadSpotlightTheme();
   }
-
+  
+  Future<void> _loadSpotlightTheme() async {
+    // Get all stories and extract unique themes
+    List<Map<String, dynamic>> storiesData = await FirebaseService.getAllStories();
+    Set<String> themesSet = {};
+    for (var story in storiesData) {
+      if (story.containsKey('themes')) {
+        for (var t in story['themes']) {
+          themesSet.add(t.toString());
+        }
+      }
+    }
+    List<String> themes = themesSet.toList();
+    print(themes); // Debugging line to check themes
+    if (themes.isNotEmpty) {
+      // Rotate through themes by day (using day-of-month as index)
+      int index = DateTime.now().day % themes.length;
+      setState(() {
+        spotlightTheme = themes[index];
+      });
+    }
+  }
+  
   @override
   void dispose() {
     _gradientController.dispose();
     super.dispose();
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,38 +158,8 @@ class _HomePageState extends State<HomePage>
                                 style: Theme.of(
                                   context,
                                 ).textTheme.headlineLarge?.copyWith(
-                                  shadows: [
-                                    Shadow(
-                                      color: const Color.fromARGB(
-                                        238,
-                                        255,
-                                        136,
-                                        0,
-                                      ).withOpacity(0.4),
-                                      blurRadius: 60,
-                                      offset: Offset(0, 0),
-                                    ),
-                                    Shadow(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        255,
-                                        20,
-                                        20,
-                                      ).withOpacity(0.3),
-                                      blurRadius: 120,
-                                      offset: Offset(0, 0),
-                                    ),
-                                    Shadow(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        255,
-                                        20,
-                                        20,
-                                      ).withOpacity(0.15),
-                                      blurRadius: 180,
-                                      offset: Offset(0, 0),
-                                    ),
-                                  ],
+                                  // Remove glow by omitting or setting shadows to empty
+                                  shadows: [],
                                 ),
                               ),
                             );
@@ -273,7 +268,7 @@ class _HomePageState extends State<HomePage>
                                             end: Alignment.centerRight,
                                           ).createShader(bounds),
                                       child: Text(
-                                        "Gender Inequality",
+                                        spotlightTheme ?? "Loading...", // Changed from "Gender Inequality"
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 42,
@@ -297,27 +292,50 @@ class _HomePageState extends State<HomePage>
                                   ],
                                 ),
                                 SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Transform.rotate(
-                                      angle: -0.3,
-                                      child: Icon(
-                                        Icons.arrow_forward,
-                                        size: 24,
-                                        color: Colors.black54,
+                                // The button is wrapped in an Align so it doesn't affect the panel's width.
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.black54,
+                                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
+                                      elevation: 4,
                                     ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      "View Stories",
-                                      style: TextStyle(
-                                        color: Colors.black54,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                    onPressed: () {
+                                      if (spotlightTheme != null) {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/explore',
+                                          arguments: {'applySpotlightFilter': true},
+                                        );
+                                      }
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Transform.rotate(
+                                          angle: -0.3,
+                                          child: Icon(
+                                            Icons.arrow_forward,
+                                            size: 24,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          "View Stories",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -325,7 +343,10 @@ class _HomePageState extends State<HomePage>
                         ),
                       ),
                       SizedBox(height: 40),
-                      RevolvingStoriesDashboard(),
+                      // Display revolving dashboard only if spotlightTheme is loaded
+                      spotlightTheme == null
+                          ? CircularProgressIndicator()
+                          : RevolvingStoriesDashboard(spotlightTheme: spotlightTheme!),
                       SizedBox(height: 40),
                       Container(
                         width: double.infinity,
@@ -335,6 +356,106 @@ class _HomePageState extends State<HomePage>
                           children: [InteractiveWorldMap()],
                         ),
                       ),
+                      SizedBox(height: 60), // Increased spacing between sections
+                      Center(
+                        child: ConstrainedBox(
+                          // New width: one-third of screen width
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width / 3),
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                RichText(
+                                  textAlign: TextAlign.center,
+                                  text: TextSpan(
+                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontSize: 36, // Increased header font size
+                                      color: Theme.of(context).colorScheme.primary, // header text is orange
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    children: [
+                                      TextSpan(text: "Join the "),
+                                      TextSpan(
+                                        text: "lumina",
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      TextSpan(text: " Community"),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 24),
+                                Text(
+                                  "Share your experience and help illuminate hidden stories. Your voice matters!",
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: 24, // Increased body font size
+                                    color: Colors.black54,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 32),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    elevation: 4,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/postStory');
+                                  },
+                                  child: Text(
+                                    "Share Your Story",
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontSize: 24, // Increased button text font size
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 60), // Increased spacing between sections
+                      Center(
+                        child: ConstrainedBox(
+                          // Constrain to one-third of screen width
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width / 3),
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "What is lumina?",
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontSize: 36, // Increased header font size
+                                    color: Theme.of(context).colorScheme.primary, // header text is orange
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: 24),
+                                Text(
+                                  "Lumina is a platform dedicated to illuminating hidden inequalities and sharing stories of marginalized communities. Our goal is to bring awareness, spark dialogue, and empower individuals to create change. Join us in uncovering untold stories and shaping a more equitable future.",
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: 24, // Increased body font size
+                                    color: Colors.black54,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 60), // Additional spacing before the footer
                       // Footer with copyright
                       Container(
                         width: double.infinity,
@@ -342,7 +463,7 @@ class _HomePageState extends State<HomePage>
                         child: Text(
                           "lumina © 2025",
                           style: TextStyle(
-                            color: Colors.black45,
+                            color: Theme.of(context).colorScheme.primary, // Now using primary (orange) color
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                           ),

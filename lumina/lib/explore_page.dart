@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lumina/services/firebase_service.dart';
+import 'package:lumina/widgets/revolving_stories_dashboard.dart';
 import 'package:lumina/widgets/theme_tag.dart';
 import 'widgets/navbar.dart';
 import 'services/algolia_service.dart';
@@ -23,16 +24,71 @@ class _ExplorePageState extends State<ExplorePage> {
   bool isLoading = true;
   String searchQuery = '';
   
-  // Update these to handle multiple selections
   List<String> selectedThemes = [];
   List<String> selectedCountries = [];
+  
+  String currentSpotlight = '';
   
   final TextEditingController searchController = TextEditingController();
   
   @override
   void initState() {
     super.initState();
-    _loadStories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Check for a flag that indicates the filter should be applied.
+      bool applySpotlightFilter = false;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic> && args["applySpotlightFilter"] == true) {
+        applySpotlightFilter = true;
+      }
+
+      // Load the daily spotlight theme.
+      _loadSpotlightTheme().then((_) {
+        if (applySpotlightFilter) {
+          setState(() {
+            selectedThemes = [currentSpotlight];
+          });
+        } else {
+          setState(() {
+            selectedThemes = []; // Do not auto-filter if not requested.
+          });
+        }
+        _loadStories();
+      });
+    });
+  }
+  
+  Future<void> _loadSpotlightTheme() async {
+    try {
+      List<Map<String, dynamic>> storiesData = await FirebaseService.getAllStories();
+      Set<String> themesSet = {};
+      for (var story in storiesData) {
+        if (story.containsKey('themes')) {
+          for (var t in story['themes']) {
+            themesSet.add(t.toString());
+          }
+        }
+      }
+      List<String> themes = themesSet.toList();
+      if (themes.isNotEmpty) {
+        int index = DateTime.now().day % themes.length;
+        setState(() {
+          currentSpotlight = themes[index];
+          selectedThemes = [currentSpotlight];
+        });
+      } else {
+        setState(() {
+          currentSpotlight = 'Workplace'; // fallback if no themes found
+          selectedThemes = [currentSpotlight];
+        });
+      }
+    } catch (e) {
+      print('Error retrieving spotlight theme: $e');
+      setState(() {
+        currentSpotlight = 'Workplace';
+        selectedThemes = [currentSpotlight];
+      });
+    }
   }
   
   Future<void> _loadStories() async {
@@ -181,17 +237,26 @@ class _ExplorePageState extends State<ExplorePage> {
                                               vertical: 8
                                             ),
                                             decoration: BoxDecoration(
-                                              color: isSelected 
-                                                  ? ThemeTag.getColor(theme) 
-                                                  : Colors.grey.shade200,
+                                              // Apply gradient only if theme is spotlight and is selected.    
+                                              gradient: (theme == currentSpotlight && isSelected)
+                                                  ? LinearGradient(
+                                                      colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                                                      begin: Alignment.centerLeft,
+                                                      end: Alignment.centerRight,
+                                                    )
+                                                  : null,
+                                              // If not spotlight-selected, then show mapped color if selected, else grey background.
+                                              color: (theme == currentSpotlight && isSelected)
+                                                  ? null
+                                                  : (isSelected ? ThemeTag.getColor(theme) : Colors.grey.shade200),
                                               borderRadius: BorderRadius.circular(30),
                                             ),
                                             child: Text(
                                               theme,
                                               style: TextStyle(
-                                                color: isSelected 
-                                                    ? Colors.white 
-                                                    : Colors.black87,
+                                                color: theme == currentSpotlight
+                                                    ? (isSelected ? Colors.white : Colors.black)
+                                                    : (isSelected ? Colors.white : Colors.black87),
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -323,6 +388,98 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
+  Widget _buildAppliedFilters() {
+    // Build chips only for active filters.
+    List<Widget> chips = [];
+
+    // Optional label to indicate these are active filters.
+    chips.add(
+      Padding(
+        padding: const EdgeInsets.only(right: 8.0),
+        child: Text(
+          'Active Filters:',
+          style: GoogleFonts.baloo2(
+            fontSize: 14, 
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+
+    // Build chips for selectedThemes.
+    for (var theme in selectedThemes) {
+      chips.add(
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            // Apply gradient if this theme is the spotlight,
+            // or else use the mapped theme color.
+            gradient: (theme == currentSpotlight)
+                ? LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+            color: (theme == currentSpotlight)
+                ? null
+                : ThemeTag.getColor(theme),
+            border: Border.all(color: Colors.black12, width: 1),
+          ),
+          child: Text(
+            theme,
+            style: TextStyle(
+              fontSize: 14,
+              // Use white text for spotlight tag if selected; black otherwise.
+              color: theme == currentSpotlight ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Build chips for selectedCountries.
+    for (var country in selectedCountries) {
+      chips.add(
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade300,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.black12, width: 1),
+          ),
+          child: Text(
+            country,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (chips.length <= 1) return SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 12),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: chips,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -337,7 +494,7 @@ class _ExplorePageState extends State<ExplorePage> {
           padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
           child: Column(
             children: [
-              // Search bar and filter
+              // Search bar and filter icon row...
               Row(
                 children: [
                   Expanded(
@@ -377,35 +534,47 @@ class _ExplorePageState extends State<ExplorePage> {
                   ),
                 ],
               ),
+              // Display applied filters if any exist.
+              _buildAppliedFilters(),
               SizedBox(height: 16),
-              // Story list
+              // Continue with the regular story list:
               Expanded(
                 child: isLoading
                     ? Center(child: CircularProgressIndicator())
                     : stories.isEmpty
                         ? Center(child: Text('No stories found'))
-                        : ScrollConfiguration(
-                            behavior: NoScrollbarBehavior(),
-                            child: ListView.builder(
-                              itemCount: stories.length,
-                              itemBuilder: (context, index) {
-                                final story = stories[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: ExpandableStoryCard(
-                                    storyId: story.id,
-                                    title: story.title,
-                                    themes: story.themes.isNotEmpty ? story.themes : ['Other'],
-                                    country: story.country,
-                                    shortContent: story.story.length > 100
-                                        ? '${story.story.substring(0, 100)}...'
-                                        : story.story,
-                                    fullContent: story.story,
-                                    likes: story.likes,
-                                  ),
-                                );
-                              },
-                            ),
+                        : Builder(
+                            builder: (context) {
+                              List<Story> displayedStories = List.from(stories);
+                              if (currentSpotlight.isNotEmpty) {
+                                // Sort the stories by likes descending.
+                                displayedStories.sort((a, b) => b.likes.compareTo(a.likes));
+                              }
+                              return ScrollConfiguration(
+                                behavior: NoScrollbarBehavior(),
+                                child: ListView.builder(
+                                  itemCount: displayedStories.length,
+                                  itemBuilder: (context, index) {
+                                    final story = displayedStories[index];
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      child: ExpandableStoryCard(
+                                        storyId: story.id,
+                                        title: story.title,
+                                        themes: story.themes.isNotEmpty ? story.themes : ['Other'],
+                                        country: story.country,
+                                        shortContent: story.story.length > 100
+                                            ? '${story.story.substring(0, 100)}...'
+                                            : story.story,
+                                        fullContent: story.story,
+                                        likes: story.likes,
+                                        currentSpotlight: currentSpotlight,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           ),
               ),
             ],
@@ -441,6 +610,7 @@ class ExpandableStoryCard extends StatefulWidget {
   final String shortContent;
   final String fullContent;
   final int likes;
+  final String? currentSpotlight; // New parameter
 
   const ExpandableStoryCard({
     Key? key,
@@ -451,6 +621,7 @@ class ExpandableStoryCard extends StatefulWidget {
     required this.shortContent,
     required this.fullContent,
     required this.likes,
+    this.currentSpotlight, // optional spotlight theme
   }) : super(key: key);
 
   @override
@@ -483,6 +654,7 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
       await FirebaseService.updateLikes(widget.storyId, _likeCount);
     } catch (e) {
       print('Error updating likes: $e');
+      // Revert changes on error
       setState(() {
         if (_isLiked) {
           _likeCount--;
@@ -545,9 +717,10 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
                       SizedBox(width: 8),
                       Wrap(
                         spacing: 4,
-                        children: widget.themes
-                            .map((tag) => ThemeTag(theme: tag))
-                            .toList(),
+                        children: widget.themes.map((tag) => ThemeTag(
+                          theme: tag,
+                          currentSpotlight: widget.currentSpotlight, // Use the passed-in spotlight theme
+                        )).toList(),
                       ),
                     ],
                   ),
@@ -566,59 +739,41 @@ class _ExpandableStoryCardState extends State<ExpandableStoryCard> {
             SizedBox(height: 8),
             // Story content
             Text(
-              _isExpanded ? widget.fullContent : widget.shortContent,
+              widget.fullContent,
+              maxLines: _isExpanded ? null : 4, // adjust the number of lines as needed
+              overflow: _isExpanded ? TextOverflow.visible : TextOverflow.fade,
               style: GoogleFonts.baloo2(
-                fontSize: 22, // increased font size for better readability
+                fontSize: 22, // increased font for readability
                 color: Colors.grey[600],
               ),
-              textAlign: TextAlign.justify, // stretches text nicely across the panel
+              textAlign: TextAlign.justify,
             ),
             SizedBox(height: 8),
             // Like counter
             Align(
               alignment: Alignment.bottomRight,
-              child: _isExpanded
-                  ? GestureDetector(
-                      onTap: _toggleLike,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '$_likeCount',
-                            style: GoogleFonts.baloo2(
-                              fontSize: 20,
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(
-                            _isLiked ? Icons.favorite : Icons.favorite_outline,
-                            color: Colors.red,
-                            size: 24,
-                          ),
-                        ],
+              child: GestureDetector(
+                onTap: _toggleLike,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$_likeCount',
+                      style: GoogleFonts.baloo2(
+                        fontSize: 20,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${widget.likes}',
-                          style: GoogleFonts.baloo2(
-                            fontSize: 20,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.favorite,
-                          color: Colors.red,
-                          size: 24,
-                        ),
-                      ],
                     ),
+                    SizedBox(width: 4),
+                    Icon(
+                      _isLiked ? Icons.favorite : Icons.favorite_outline,
+                      color: Colors.red,
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

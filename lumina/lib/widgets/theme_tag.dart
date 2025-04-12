@@ -2,7 +2,16 @@ import 'package:flutter/material.dart';
 
 class ThemeTag extends StatelessWidget {
   final String theme;
-  const ThemeTag({required this.theme});
+  final String? currentSpotlight; // Pass the current spotlight theme
+
+  const ThemeTag({
+    Key? key,
+    required this.theme,
+    this.currentSpotlight,
+  }) : super(key: key);
+
+  // Helper function to decide if this tag is the spotlight theme.
+  bool get isSpotlight => currentSpotlight != null && currentSpotlight == theme;
 
   // Static helper to get the mapped color for a theme.
   static Color getColor(String theme) {
@@ -24,11 +33,18 @@ class ThemeTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = ThemeTag.getColor(theme);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color,
+        // If this tag is spotlight, use the special gradient decoration; otherwise use the mapped color.
+        gradient: isSpotlight
+            ? LinearGradient(
+                colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              )
+            : null,
+        color: isSpotlight ? null : getColor(theme),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

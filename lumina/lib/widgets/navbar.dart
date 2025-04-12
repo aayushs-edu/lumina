@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // Add this import
-import '../main.dart';
-import '../explore_page.dart';
-import '../todays_topic_page.dart';
-import '../post_story_page.dart';
-import '../create_lumina_post_page.dart';
-import '../data_center_page.dart';
 
 class LuminaNavbar extends StatelessWidget {
   final String currentPage;
@@ -27,10 +21,7 @@ class LuminaNavbar extends StatelessWidget {
           child: TextButton(
             onPressed: () {
               if (currentPage != 'home') {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
+                Navigator.pushReplacementNamed(context, '/');
               }
             },
             style: TextButton.styleFrom(

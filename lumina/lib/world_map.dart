@@ -44,7 +44,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
     HotspotLevel.extreme: const Color.fromARGB(255, 128, 0, 128), // Purple
     HotspotLevel.high: const Color.fromARGB(255, 255, 0, 0), // Red
     HotspotLevel.medium: const Color.fromARGB(255, 255, 165, 0), // Orange
-    HotspotLevel.low: const Color.fromARGB(255, 255, 230, 4), // Yellow
+    HotspotLevel.low: const Color.fromARGB(255, 250, 225, 5), // Yellow
     HotspotLevel.none: Colors.grey[200]!, // Light gray
   };
 
@@ -311,86 +311,85 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
         Text(
           "Inequality Atlas",
           style: TextStyle(
-            color: Colors.black87,
+            color: const Color.fromARGB(221, 253, 96, 4),
             fontSize: 40,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
         ),
         SizedBox(height: 24),
-        Container(
-          height: 500,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Map in white panel - now takes up 90%
-              Expanded(
-                flex: 9,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color.fromARGB(255, 128, 0, 128)
-                          .withOpacity(0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        spreadRadius: 0,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  padding: EdgeInsets.all(16),
-                  child: _regions.isEmpty
-                      ? Center(child: CircularProgressIndicator())
-                      : FittedBox(
-                          fit: BoxFit.contain,
-                          child: SizedBox(
-                            width: 1000,
-                            height: 450,
-                            child: Stack(
-                              children: [
-                                ..._regions.map((region) {
-                                  return _getRegionImage(region);
-                                }),
-                              ],
-                            ),
-                          ),
+        Center(
+          child: ConstrainedBox(
+            // Adjust maxWidth to make the section thinner (e.g. 80% of screen width)
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+            child: Container(
+              height: 500,
+              child: Stack(
+                children: [
+                  // Map container covers the full area
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
+                          width: 1,
                         ),
-                ),
-              ),
-              SizedBox(width: 8),
-              // Country Info Panel - now takes up 10%
-              Expanded(
-                flex: 1,
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color.fromARGB(255, 128, 0, 128)
-                          .withOpacity(0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromARGB(255, 128, 0, 128)
-                            .withOpacity(0.1),
-                        blurRadius: 8,
-                        spreadRadius: 0,
-                        offset: Offset(0, 0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            spreadRadius: 0,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      padding: EdgeInsets.all(16),
+                      child: _regions.isEmpty
+                          ? Center(child: CircularProgressIndicator())
+                          : FittedBox(
+                              fit: BoxFit.contain,
+                              child: SizedBox(
+                                width: 1000,
+                                height: 450,
+                                child: Stack(
+                                  children: _regions.map((region) => _getRegionImage(region)).toList(),
+                                ),
+                              ),
+                            ),
+                    ),
                   ),
-                  child: _buildCountryInfoPanel(),
-                ),
+                  // Overlaid Country Info Panel on the right
+                  Positioned(
+                    top: 16,
+                    bottom: 16,
+                    right: 16,
+                    width: 180, // Increased width from 120 to 180
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.1),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                      child: _buildCountryInfoPanel(),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -713,12 +712,30 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
 
   // Helper method to build detailed metrics with icons
   Widget _buildDetailedMetric(String label, String value, Color accentColor) {
+    // Define tooltip messages for each metric type.
+    String tooltipMessage;
+    switch (label) {
+      case "Maternal Mortality":
+        tooltipMessage = "Percentage of maternal deaths per 100,000 live births.";
+        break;
+      case "Adolescent Birth Rate":
+        tooltipMessage = "Percentage of births from adolescent mothers.";
+        break;
+      case "Parliament Seats (Women)":
+        tooltipMessage = "Percentage of seats held by women in parliament.";
+        break;
+      default:
+        tooltipMessage = "";
+    }
     return Row(
       children: [
-        Icon(
-          Icons.info_outline,
-          size: 20,
-          color: accentColor,
+        Tooltip(
+          message: tooltipMessage,
+          child: Icon(
+            Icons.info_outline,
+            size: 20,
+            color: accentColor,
+          ),
         ),
         SizedBox(width: 12),
         Expanded(

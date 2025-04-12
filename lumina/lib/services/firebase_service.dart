@@ -73,7 +73,7 @@ class FirebaseService {
     return cleaned;
   }
 
-  // Get all stories with cleaned themes
+  // Modified getAllStories without calling _cleanThemes
   static Future<List<Map<String, dynamic>>> getAllStories() async {
     QuerySnapshot querySnapshot = await _storiesCollection.get();
     return querySnapshot.docs.map((doc) {
@@ -81,45 +81,53 @@ class FirebaseService {
         'id': doc.id,
         ...doc.data() as Map<String, dynamic>,
       };
-      if (data.containsKey('themes') && data['themes'] is List) {
-        data['themes'] = _cleanThemes(data['themes']);
-      }
+      // Removed _cleanThemes call
       return data;
     }).toList();
   }
 
-  // Get stories by theme with cleaned themes
-  static Future<List<Map<String, dynamic>>> getStoriesByTheme(
-    String theme,
-  ) async {
-    QuerySnapshot querySnapshot =
-        await _storiesCollection.where('themes', arrayContains: theme).get();
+  // Modified getStoriesByTheme without calling _cleanThemes
+  static Future<List<Map<String, dynamic>>> getStoriesByTheme(String theme) async {
+    QuerySnapshot querySnapshot = await _storiesCollection.where('themes', arrayContains: theme).get();
     return querySnapshot.docs.map((doc) {
       Map<String, dynamic> data = {
         'id': doc.id,
         ...doc.data() as Map<String, dynamic>,
       };
-      if (data.containsKey('themes') && data['themes'] is List) {
-        data['themes'] = _cleanThemes(data['themes']);
-      }
+      // Removed _cleanThemes call
       return data;
     }).toList();
   }
 
-  // Get random stories with cleaned themes
+  // Modified getTopStoriesByTheme without calling _cleanThemes
+  static Future<List<Map<String, dynamic>>> getTopStoriesByTheme(String theme, int limit) async {
+    print("Fetching top stories for theme: $theme with limit: $limit");
+    QuerySnapshot querySnapshot = await _storiesCollection
+        .where('themes', arrayContains: theme)
+        .orderBy('likes', descending: true)
+        .limit(limit)
+        .get();
+    return querySnapshot.docs.map((doc) {
+      Map<String, dynamic> data = {
+        'id': doc.id,
+        ...doc.data() as Map<String, dynamic>,
+      };
+      // Removed _cleanThemes call
+      return data;
+    }).toList();
+  }
+
+  // Modified getRandomStories without calling _cleanThemes
   static Future<List<Map<String, dynamic>>> getRandomStories(int limit) async {
     QuerySnapshot querySnapshot = await _storiesCollection.get();
-    List<Map<String, dynamic>> stories =
-        querySnapshot.docs.map((doc) {
-          Map<String, dynamic> data = {
-            'id': doc.id,
-            ...doc.data() as Map<String, dynamic>,
-          };
-          if (data.containsKey('themes') && data['themes'] is List) {
-            data['themes'] = _cleanThemes(data['themes']);
-          }
-          return data;
-        }).toList();
+    List<Map<String, dynamic>> stories = querySnapshot.docs.map((doc) {
+      Map<String, dynamic> data = {
+        'id': doc.id,
+        ...doc.data() as Map<String, dynamic>,
+      };
+      // Removed _cleanThemes call
+      return data;
+    }).toList();
 
     stories.shuffle();
     return stories.take(limit).toList();
