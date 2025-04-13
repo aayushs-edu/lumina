@@ -52,7 +52,6 @@ class LuminaApp extends StatelessWidget {
       routes: {
         '/todaysTopic': (context) => TodaysTopicPage(),
         '/postStory': (context) => PostStoryPage(),
-        '/createLuminaPost': (context) => CreateLuminaPostPage(),
         '/dataCenter': (context) => DataCenterPage(),
         '/explore': (context) => ExplorePage(),
       },

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lumina/create_lumina_post_page.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'widgets/navbar.dart';
 
@@ -8,6 +9,8 @@ class PostStoryPage extends StatefulWidget {
 }
 
 class _PostStoryPageState extends State<PostStoryPage> {
+  bool _postToFirebase = false; // Set to false for testing only
+
   String? selectedTheme1;
   String? selectedTheme2; // Optional second theme
   
@@ -87,14 +90,20 @@ class _PostStoryPageState extends State<PostStoryPage> {
           }
         }
         
-        // Add story to Firestore with updated themes list
-        await FirebaseService.addStory(
-          title: titleController.text,
-          story: bodyController.text,
-          country: selectedCountry!,
-          themes: themesSelected,
-          keywords: [], // Optionally add keyword extraction here
-        );
+        // Conditionally post the story to Firebase based on the toggle flag.
+        if (_postToFirebase) {
+          await FirebaseService.addStory(
+            title: titleController.text,
+            story: bodyController.text,
+            country: selectedCountry!,
+            themes: themesSelected,
+            keywords: [], // Optionally add keyword extraction here
+          );
+        } else {
+          // For testing - simulate a delay without posting
+          print("Firebase posting is disabled for testing.");
+          await Future.delayed(Duration(seconds: 1));
+        }
         
         // Hide loading indicator
         Navigator.of(context).pop();
@@ -104,8 +113,49 @@ class _PostStoryPageState extends State<PostStoryPage> {
           SnackBar(content: Text("Your story has been posted anonymously. Thank you for sharing.")),
         );
         
-        // Navigate back to explore page
-        Navigator.pushNamed(context, '/explore');
+        // Ask if they want to post on Instagram through lumina as well.
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("Post on Instagram?"),
+              content: Text("Do you want to also post on Instagram through lumina?"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Dismiss dialog
+                    Navigator.pushNamed(context, '/explore');
+                  },
+                  child: Text("No"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Dismiss dialog
+                    
+                    // Navigate to CreateLuminaPostPage with the story data
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateLuminaPostPage(
+                          title: titleController.text,
+                          story: bodyController.text,
+                          country: selectedCountry!,
+                          themes: [
+                            if (selectedTheme1 != null) 
+                              selectedTheme1 == 'Other' ? customTheme1Controller.text : selectedTheme1!,
+                            if (selectedTheme2 != null)
+                              selectedTheme2 == 'Other' ? customTheme2Controller.text : selectedTheme2!,
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text("Yes"),
+                ),
+              ],
+            );
+          },
+        );
       } catch (e) {
         // Hide loading indicator
         Navigator.of(context).pop();

@@ -34,7 +34,7 @@ class LuminaNavbar extends StatelessWidget {
             ),
             child: Text(
               "lumina",
-              style: GoogleFonts.baloo2(  // Apply Baloo2 font
+              style: GoogleFonts.baloo2(
                 color: const Color.fromARGB(255, 255, 102, 0),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -124,28 +124,6 @@ class LuminaNavbar extends StatelessWidget {
                     "Post a Story",
                     style: TextStyle(
                       color: currentPage == 'postStory' 
-                          ? const Color.fromARGB(255, 255, 102, 0)
-                          : Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                // Create a Lumina Post
-                TextButton(
-                  onPressed: () {
-                    if (currentPage != 'createLuminaPost') {
-                      Navigator.pushReplacementNamed(context, '/createLuminaPost');
-                    }
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  ),
-                  child: Text(
-                    "Create a Lumina Post",
-                    style: TextStyle(
-                      color: currentPage == 'createLuminaPost' 
                           ? const Color.fromARGB(255, 255, 102, 0)
                           : Colors.black,
                       fontSize: 14,
