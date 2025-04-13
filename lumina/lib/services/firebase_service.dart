@@ -171,4 +171,20 @@ class FirebaseService {
       return 0;
     }
   }
+
+  static Future<List<MapEntry<String, int>>> getPrevalentThemesForCountry(String country) async {
+    QuerySnapshot snapshot = await _storiesCollection.where('country', isEqualTo: country).get();
+    Map<String, int> themeCounts = {};
+    for (var doc in snapshot.docs) {
+      List<dynamic> themes = doc['themes'] as List<dynamic>;
+      for (var theme in themes) {
+        String themeStr = theme.toString();
+        themeCounts[themeStr] = (themeCounts[themeStr] ?? 0) + 1;
+      }
+    }
+    var entries = themeCounts.entries.toList();
+    // Sort descending by count.
+    entries.sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
 }

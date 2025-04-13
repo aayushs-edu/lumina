@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lumina/services/firebase_service.dart';
+import 'package:lumina/widgets/waving_leaf.dart';
 import 'package:path_drawing/path_drawing.dart';
 import 'package:xml/xml.dart';
 import 'package:lumina/models/gender_inequality_data.dart';
+import 'package:lumina/widgets/theme_tag.dart';
 
 class InteractiveWorldMap extends StatefulWidget {
   @override
@@ -18,6 +20,29 @@ class Region {
   final Color color;
 
   Region({required this.id, required this.path, required this.color});
+}
+
+// Add this CustomPainter class, ideally near the top of the file or in a separate file.
+class GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey.withOpacity(0.2)
+      ..strokeWidth = 1;
+    final double spacing = 50; // Adjust this value for grid spacing
+
+    // Draw vertical lines
+    for (double x = 0; x <= size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    // Draw horizontal lines
+    for (double y = 0; y <= size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _InteractiveWorldMapState extends State<InteractiveWorldMap>
@@ -130,14 +155,54 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                     SizedBox(height: 4),
                     Text(
                       'GII Score: ${giiData.genderInequalityIndex.toStringAsFixed(3)}',
-                      style: TextStyle(color: Colors.black87),
+                      style: TextStyle(color: Colors.black87, fontSize: 12),
                     ),
                     Text(
                       'Level: ${_getLevelName(giiData.hotspotLevel)}',
                       style: TextStyle(
                         color: _hotspotColors[giiData.hotspotLevel],
                         fontWeight: FontWeight.w500,
+                        fontSize: 12,
                       ),
+                    ),
+                    SizedBox(height: 8),
+                    FutureBuilder<List<MapEntry<String, int>>>(
+                      future: FirebaseService.getPrevalentThemesForCountry(countryName),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Text(
+                            "Loading themes...",
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          );
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Text(
+                            "No themes available.",
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          );
+                        }
+                        final themes = snapshot.data!;
+                        return Wrap(
+                          spacing: 5, // increased horizontal spacing
+                          runSpacing: 2, // added vertical spacing in case of wrapping
+                          children: themes.take(2).map((entry) {
+                            return Padding(
+                              padding: const EdgeInsets.all(4), // extra padding around each theme element
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ThemeTag(theme: entry.key),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "(${entry.value})",
+                                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -305,92 +370,100 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Stack(
       children: [
-        Text(
-          "Inequality Atlas",
-          style: TextStyle(
-            color: const Color.fromARGB(221, 253, 96, 4),
-            fontSize: 40,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: 24),
-        Center(
-          child: ConstrainedBox(
-            // Adjust maxWidth to make the section thinner (e.g. 80% of screen width)
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-            child: Container(
-              height: 500,
-              child: Stack(
-                children: [
-                  // Map container covers the full area
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            spreadRadius: 0,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      padding: EdgeInsets.all(16),
-                      child: _regions.isEmpty
-                          ? Center(child: CircularProgressIndicator())
-                          : FittedBox(
-                              fit: BoxFit.contain,
-                              child: SizedBox(
-                                width: 1000,
-                                height: 450,
-                                child: Stack(
-                                  children: _regions.map((region) => _getRegionImage(region)).toList(),
-                                ),
-                              ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 24),
+            Center(
+              child: ConstrainedBox(
+                // Adjust maxWidth to make the section thinner (e.g. 80% of screen width)
+                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                child: Container(
+                  height: 500,
+                  child: Stack(
+                    children: [
+                      // Map container covers the full area
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
+                              width: 1,
                             ),
-                    ),
-                  ),
-                  // Overlaid Country Info Panel on the right
-                  Positioned(
-                    top: 16,
-                    bottom: 16,
-                    right: 16,
-                    width: 180, // Increased width from 120 to 180
-                    child: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.1),
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                            offset: Offset(0, 0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                spreadRadius: 0,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          padding: EdgeInsets.all(16),
+                          child: Stack(
+                            children: [
+                              // Faint Grid background
+                              CustomPaint(
+                                painter: GridPainter(),
+                                size: Size.infinite,
+                              ),
+                              _regions.isEmpty
+                                  ? Center(child: CircularProgressIndicator())
+                                  : Center( // Wrap FittedBox with Center to keep the map centered
+                                      child: FittedBox(
+                                        fit: BoxFit.contain,
+                                        child: SizedBox(
+                                          width: 1000,
+                                          height: 450,
+                                          child: Stack(
+                                            children: _regions
+                                                .map((region) => _getRegionImage(region))
+                                                .toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: _buildCountryInfoPanel(),
-                    ),
+                      // Overlaid Country Info Panel on the right
+                      Positioned(
+                        top: 16,
+                        bottom: 16,
+                        right: 16,
+                        width: 180, // Increased width from 120 to 180
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.1),
+                                blurRadius: 8,
+                                spreadRadius: 0,
+                                offset: Offset(0, 0),
+                              ),
+                            ],
+                          ),
+                          child: _buildCountryInfoPanel(),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ],
     );
@@ -510,152 +583,183 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
           child: Container(
             width: 500,
             padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with country name and close button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      countryName,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with country name and close button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        countryName,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: Colors.black54),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  // Hotspot level indicator
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: hotspotColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: hotspotColor,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _getLevelName(giiData.hotspotLevel),
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: hotspotColor,
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.black54),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                
-                // Hotspot level indicator
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: hotspotColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: hotspotColor,
-                      width: 1,
-                    ),
                   ),
-                  child: Text(
-                    _getLevelName(giiData.hotspotLevel),
+                  SizedBox(height: 24),
+                  // Main metrics in a row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildMetricBox(
+                        "GII Score",
+                        giiData.genderInequalityIndex.toStringAsFixed(3),
+                        hotspotColor,
+                      ),
+                      _buildMetricBox(
+                        "Rank",
+                        "${giiData.hdiRank}/${GenderInequalityDataManager().data.length}",
+                        hotspotColor,
+                      ),
+                      _buildMetricBox(
+                        "Stories",
+                        "${giiData.storyCount}",
+                        hotspotColor,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 32),
+                  Divider(color: Colors.grey[300], thickness: 1),
+                  SizedBox(height: 24),
+                  // Gender Inequality Metrics section
+                  Text(
+                    "Gender Inequality Metrics",
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: hotspotColor,
+                      color: Colors.black87,
                     ),
                   ),
-                ),
-                SizedBox(height: 24),
-                
-                // Main metrics in a row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // GII Score
-                    _buildMetricBox(
-                      "GII Score",
-                      giiData.genderInequalityIndex.toStringAsFixed(3),
-                      hotspotColor,
-                    ),
-                    
-                    // Rank
-                    _buildMetricBox(
-                      "Rank",
-                      "${giiData.hdiRank}/${GenderInequalityDataManager().data.length}",
-                      hotspotColor,
-                    ),
-                    
-                    // Stories
-                    _buildMetricBox(
-                      "Stories",
-                      "${giiData.storyCount}",
-                      hotspotColor,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 32),
-                
-                // Divider
-                Divider(color: Colors.grey[300], thickness: 1),
-                SizedBox(height: 24),
-                
-                // Section title
-                Text(
-                  "Gender Inequality Metrics",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildDetailedMetric(
+                              "Maternal Mortality",
+                              "${giiData.maternalMortality}%",
+                              hotspotColor,
+                            ),
+                            SizedBox(height: 16),
+                            _buildDetailedMetric(
+                              "Adolescent Birth Rate",
+                              "${giiData.adolescentBirthRate}%",
+                              hotspotColor,
+                            ),
+                            SizedBox(height: 16),
+                            _buildDetailedMetric(
+                              "Parliament Seats (Women)",
+                              "${giiData.parliamentSeatsWomen}%",
+                              hotspotColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 24),
+                      // Right column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildComparisonMetric(
+                              "Secondary Education",
+                              "Female: ${giiData.educationFemale}%",
+                              "Male: ${giiData.educationMale}%",
+                              hotspotColor,
+                            ),
+                            SizedBox(height: 16),
+                            _buildComparisonMetric(
+                              "Labour Force",
+                              "Female: ${giiData.labourForceFemale}%",
+                              "Male: ${giiData.labourForceMale}%",
+                              hotspotColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(height: 16),
-                
-                // Detailed metrics
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left column
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailedMetric(
-                            "Maternal Mortality",
-                            "${giiData.maternalMortality}%",
-                            hotspotColor,
-                          ),
-                          SizedBox(height: 16),
-                          _buildDetailedMetric(
-                            "Adolescent Birth Rate",
-                            "${giiData.adolescentBirthRate}%",
-                            hotspotColor,
-                          ),
-                          SizedBox(height: 16),
-                          _buildDetailedMetric(
-                            "Parliament Seats (Women)",
-                            "${giiData.parliamentSeatsWomen}%",
-                            hotspotColor,
-                          ),
-                        ],
-                      ),
+                  SizedBox(height: 24),
+                  // New section: Most Prevalent Themes
+                  Text(
+                    "Most Prevalent Themes",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
-                    SizedBox(width: 24),
-                    // Right column
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Education comparison
-                          _buildComparisonMetric(
-                            "Secondary Education",
-                            "Female: ${giiData.educationFemale}%",
-                            "Male: ${giiData.educationMale}%",
-                            hotspotColor,
-                          ),
-                          SizedBox(height: 16),
-                          // Labour force comparison
-                          _buildComparisonMetric(
-                            "Labour Force",
-                            "Female: ${giiData.labourForceFemale}%",
-                            "Male: ${giiData.labourForceMale}%",
-                            hotspotColor,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24),
-              ],
+                  ),
+                  SizedBox(height: 16),
+                  FutureBuilder<List<MapEntry<String, int>>>(
+                    future: FirebaseService.getPrevalentThemesForCountry(countryName),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Text(
+                          "No themes available.",
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        );
+                      }
+                      final themes = snapshot.data!;
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: themes.take(3).map((entry) {
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ThemeTag(theme: entry.key),
+                              SizedBox(width: 4),
+                              Text(
+                                "(${entry.value})",
+                                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ),

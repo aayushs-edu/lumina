@@ -89,9 +89,9 @@ class _RevolvingStoriesDashboardState extends State<RevolvingStoriesDashboard> w
           child: Text(
             "Top Stories",
             style: GoogleFonts.baloo2(
-              fontSize: 28,
+              fontSize: 36, // Updated font size to match home page headers
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.white, // This color is masked by the gradient
             ),
             textAlign: TextAlign.center,
           ),

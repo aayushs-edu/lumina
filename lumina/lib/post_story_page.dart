@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lumina/create_lumina_post_page.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'widgets/navbar.dart';
@@ -206,14 +207,21 @@ class _PostStoryPageState extends State<PostStoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Main title
-                  Text(
-                    "Post a Story",
-                    style: TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF5722), // Red-orange color
+                  ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      colors: [Colors.red, Colors.orange],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                    child: Text(
+                      "Post a Story",
+                      style: GoogleFonts.baloo2(
+                        fontSize: 60,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white, // This will be masked by the gradient
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   // Subtitle with partial bold text
                   RichText(
@@ -308,7 +316,7 @@ class _PostStoryPageState extends State<PostStoryPage> {
                         ),
                         SizedBox(height: 8),
                         Container(
-                          height: 300,
+                          height: 250,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(8),
@@ -479,20 +487,31 @@ class _PostStoryPageState extends State<PostStoryPage> {
                   SizedBox(
                     width: 160,
                     height: 50,
-                    child: ElevatedButton(
-                      onPressed: _submitStory,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF3D00),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.red, Colors.orange],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Text(
-                        "Post",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      child: ElevatedButton(
+                        onPressed: _submitStory,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: Text(
+                          "Post",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'widgets/navbar.dart';
 
@@ -43,7 +44,7 @@ class _CreateLuminaPostPageState extends State<CreateLuminaPostPage> {
   String _colorScheme = "orange";
 
   // Update this variable with your backend URL.
-  final String currentBackendUrl = "https://daf3-73-189-131-67.ngrok-free.app";
+  final String currentBackendUrl = "https://1741-73-189-131-67.ngrok-free.app";
 
   @override
   void initState() {
@@ -295,17 +296,36 @@ class _CreateLuminaPostPageState extends State<CreateLuminaPostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Page Title
-              Text(
-                "Create Instagram Post",
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF5722),
-                ),
-                textAlign: TextAlign.center,
+              // Page Title with red-orange gradient
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/ig.png', // Ensure this asset is available in your assets folder.
+                    width: 60,
+                    height: 60,
+                  ),
+                  SizedBox(width: 15),
+                  ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      colors: [Colors.red, Colors.orange],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                    child: Text(
+                      "Post to Instagram",
+                      style: GoogleFonts.baloo2(
+                        fontSize: 60,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white, // This will be masked by the gradient
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 2),
               Text(
                 "Choose which parts of your story to share",
                 style: TextStyle(
@@ -339,6 +359,41 @@ class _CreateLuminaPostPageState extends State<CreateLuminaPostPage> {
               SizedBox(height: 20),
               // Color Scheme Toggle Section
               _buildColorSchemeToggle(),
+              SizedBox(height: 30),
+              // New Update Preview Button placed right above the post preview section
+              SizedBox(height: 30),
+              Center(
+                child: Container(
+                  width: 300, // Fixed width for the button
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.red, Colors.orange],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _generatePreviewImages,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                    ),
+                    child: Text(
+                      "Update Preview",
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               SizedBox(height: 30),
               // Preview Section
               _buildPreviewSection(),
@@ -394,69 +449,48 @@ class _CreateLuminaPostPageState extends State<CreateLuminaPostPage> {
           ),
         ),
         SizedBox(height: 12),
-        ElevatedButton(
-          onPressed: _generatePreviewImages,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFFFF3D00),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-          child: Text(
-            "Update Preview",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
       ],
     );
   }
 
   // Color Scheme Toggle widget
   Widget _buildColorSchemeToggle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Select Color Scheme",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.start,
+    children: [
+      Text(
+        "Select Color Scheme",
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
         ),
-        SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ChoiceChip(
-              label: Text("Orange"),
-              selected: _colorScheme == "orange",
-              selectedColor: Colors.deepOrange,
-              onSelected: (selected) {
-                setState(() {
-                  _colorScheme = "orange";
-                });
-              },
-            ),
-            SizedBox(width: 16),
-            ChoiceChip(
-              label: Text("Purple"),
-              selected: _colorScheme == "purple",
-              selectedColor: Colors.purple,
-              onSelected: (selected) {
-                setState(() {
-                  _colorScheme = "purple";
-                });
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+      ),
+      SizedBox(width: 16),
+      ChoiceChip(
+        label: Text("Orange"),
+        selected: _colorScheme == "orange",
+        selectedColor: Colors.deepOrange,
+        onSelected: (selected) {
+          setState(() {
+            _colorScheme = "orange";
+          });
+        },
+      ),
+      SizedBox(width: 16),
+      ChoiceChip(
+        label: Text("Purple"),
+        selected: _colorScheme == "purple",
+        selectedColor: Colors.purple,
+        onSelected: (selected) {
+          setState(() {
+            _colorScheme = "purple";
+          });
+        },
+      ),
+    ],
+  );
+}
 
   Widget _buildCaptionSection() {
     return Column(
