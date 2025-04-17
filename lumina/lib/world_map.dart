@@ -345,6 +345,16 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
         }
       }
 
+      // If still no match, try matching by country name directly.
+      if (giiData == null) {
+        for (var data in giiCountryMap.values) {
+          if (data.country.toLowerCase() == isoCode.toLowerCase()) {
+            giiData = data;
+            break;
+          }
+        }
+      }
+
       if (giiData != null) {
         countryName = giiData.country;
       }
@@ -672,13 +682,13 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                           children: [
                             _buildDetailedMetric(
                               "Maternal Mortality",
-                              "${giiData.maternalMortality}%",
+                              "${giiData.maternalMortality/1000}%",
                               hotspotColor,
                             ),
                             SizedBox(height: 16),
                             _buildDetailedMetric(
                               "Adolescent Birth Rate",
-                              "${giiData.adolescentBirthRate}%",
+                                "${(giiData.adolescentBirthRate/10).toStringAsFixed(2)}%",
                               hotspotColor,
                             ),
                             SizedBox(height: 16),
@@ -823,7 +833,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
         tooltipMessage = "Percentage of maternal deaths per 100,000 live births.";
         break;
       case "Adolescent Birth Rate":
-        tooltipMessage = "Percentage of births from adolescent mothers.";
+        tooltipMessage = "Percentage of births from women ages 15-19.";
         break;
       case "Parliament Seats (Women)":
         tooltipMessage = "Percentage of seats held by women in parliament.";
