@@ -29,3 +29,5 @@ wheels/
 # IDE
 .vscode/
 .idea/ 
+
+.env
