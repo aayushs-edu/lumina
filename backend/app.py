@@ -8,8 +8,15 @@ from instagrapi import Client
 from PIL import Image, ImageDraw, ImageFont
 import openai
 from dotenv import dotenv_values
-import uuid
-import time
+import pandas as pd
+import re
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.metrics import silhouette_samples, silhouette_score
+import re
+import openai
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -406,6 +413,495 @@ def serve_image(filename):
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
+
+@app.route('/generate-policy', methods=['POST'])
+def generate_policy():
+    data = request.get_json()
+    country = data.get("country", "")
+    focus_areas = data.get("focus_areas", [])
+    stored_naps_path = "data/stored_naps.csv"
+
+    df = pd.read_csv("data/nap_nlp_enriched.csv")
+
+    ###### Check if the response already exists
+    if os.path.exists(stored_naps_path):
+        stored_naps = pd.read_csv(stored_naps_path)
+        existing_row = stored_naps[stored_naps['Country'] == country]
+        if not existing_row.empty:
+            print(f"▶ Returning cached NAP for: {country}")
+            output = existing_row.iloc[0]['Output']
+            chunks = extract_chunks(output)
+            return jsonify({"output": chunks})
+
+    ##### Setup
+    df['Legislation_Parsed'] = df['legislation'].apply(parse_legislation)
+    df['Num_Laws'] = df['Legislation_Parsed'].apply(len)
+
+    df['Legislation_Categories'] = df['Legislation_Parsed'].apply(extract_categories)
+    df['Cat_Text'] = df['Legislation_Categories'].apply(lambda cats: ' '.join(cats))
+
+    cat_vectorizer = CountVectorizer(lowercase=True, token_pattern=r"(?u)\b\w+\b")
+    cat_dtm = cat_vectorizer.fit_transform(df['Cat_Text'])
+    cat_feature_names = cat_vectorizer.get_feature_names_out()
+    cat_counts = np.asarray(cat_dtm.sum(axis=0)).ravel()
+    top_idx = np.argsort(cat_counts)[-10:]
+    top_cats = [cat_feature_names[i] for i in top_idx]
+    for cat in top_cats:
+        df[f'Cat_{cat}'] = (df['Cat_Text'].str.contains(rf"\b{re.escape(cat)}\b", case=False)).astype(int)
+
+    feature_cols = [
+        'GII_Rank', 'Military_Expenditure_Clean',
+        'Proportion of women subjected to physical and/or sexual violence in the last 12 months (% of ever partnered women ages 15-49)',
+        'Mean age at first marriage, female',
+        'Women making their own informed decisions regarding sexual relations, contraceptive use and reproductive health care  (% of women age 15-49)',
+        'There is legislation on sexual harassment in employment (1=yes; 0=no)',
+        'Women and men have equal ownership rights to immovable property (1=yes; 0=no)',
+        'CEDAW_Ratified', 'ATT_Ratified', 'Num_Laws'
+    ] + [f'Cat_{cat}' for cat in top_cats]
+    ######
+
+    print(f"\n▶ Generating NAP for: {country}")
+
+    output = generate_nap_for_country(df, country, feature_cols, focus_areas, alternate=False)
+    print(output)
+
+    ###### Save the response to the CSV
+    new_row = {"Country": country, "Output": output}
+    if os.path.exists(stored_naps_path):
+        stored_naps = pd.read_csv(stored_naps_path)
+        stored_naps = pd.concat([stored_naps, pd.DataFrame([new_row])], ignore_index=True)
+    else:
+        stored_naps = pd.DataFrame([new_row])
+
+    stored_naps.to_csv(stored_naps_path, index=False)
+    print(f"▶ Saved NAP for {country} to {stored_naps_path}")
+
+    # Extract chunks from the output
+    chunks = extract_chunks(output)
+
+    return jsonify({"output": chunks})
+
+@app.route('/enhance-policy', methods=['POST'])
+def enhance_policy():
+    data = request.get_json()
+    country = data.get("country", "")
+    focus_areas = data.get("focus_areas", [])
+    stored_naps_path = "data/stored_naps.csv"
+
+    df = pd.read_csv("data/nap_nlp_enriched.csv")
+
+    ###### Check if the response already exists
+    if os.path.exists(stored_naps_path):
+        stored_naps = pd.read_csv(stored_naps_path)
+        existing_row = stored_naps[stored_naps['Country'] == country]
+        if not existing_row.empty:
+            print(f"▶ Returning cached NAP for: {country}")
+            output = existing_row.iloc[0]['Output']
+            chunks = extract_chunks(output)
+            return jsonify({"output": chunks})
+
+    ##### Setup
+    df['Legislation_Parsed'] = df['legislation'].apply(parse_legislation)
+    df['Num_Laws'] = df['Legislation_Parsed'].apply(len)
+
+    df['Legislation_Categories'] = df['Legislation_Parsed'].apply(extract_categories)
+    df['Cat_Text'] = df['Legislation_Categories'].apply(lambda cats: ' '.join(cats))
+
+    cat_vectorizer = CountVectorizer(lowercase=True, token_pattern=r"(?u)\b\w+\b")
+    cat_dtm = cat_vectorizer.fit_transform(df['Cat_Text'])
+    cat_feature_names = cat_vectorizer.get_feature_names_out()
+    cat_counts = np.asarray(cat_dtm.sum(axis=0)).ravel()
+    top_idx = np.argsort(cat_counts)[-10:]
+    top_cats = [cat_feature_names[i] for i in top_idx]
+    for cat in top_cats:
+        df[f'Cat_{cat}'] = (df['Cat_Text'].str.contains(rf"\b{re.escape(cat)}\b", case=False)).astype(int)
+
+    feature_cols = [
+        'GII_Rank', 'Military_Expenditure_Clean',
+        'Proportion of women subjected to physical and/or sexual violence in the last 12 months (% of ever partnered women ages 15-49)',
+        'Mean age at first marriage, female',
+        'Women making their own informed decisions regarding sexual relations, contraceptive use and reproductive health care  (% of women age 15-49)',
+        'There is legislation on sexual harassment in employment (1=yes; 0=no)',
+        'Women and men have equal ownership rights to immovable property (1=yes; 0=no)',
+        'CEDAW_Ratified', 'ATT_Ratified', 'Num_Laws'
+    ] + [f'Cat_{cat}' for cat in top_cats]
+    ######
+
+    print(f"\n▶ Generating NAP for: {country}")
+
+    output = generate_nap_for_country(df, country, feature_cols, focus_areas, alternate=True)
+    print(output)
+
+    ###### Save the response to the CSV
+    new_row = {"Country": country, "Output": output}
+    if os.path.exists(stored_naps_path):
+        stored_naps = pd.read_csv(stored_naps_path)
+        stored_naps = pd.concat([stored_naps, pd.DataFrame([new_row])], ignore_index=True)
+    else:
+        stored_naps = pd.DataFrame([new_row])
+
+    stored_naps.to_csv(stored_naps_path, index=False)
+    print(f"▶ Saved NAP for {country} to {stored_naps_path}")
+
+    # Extract chunks from the output
+    chunks = extract_chunks(output)
+
+    return jsonify({"output": chunks})
+
+
+def extract_chunks(output):
+    """
+    Extract chunks from the raw output based on headers surrounded by double asterisks (**).
+    Each chunk includes its header and corresponding content.
+    """
+    chunks = []
+    lines = output.split("\n")
+    current_chunk = {"header": None, "content": ""}
+
+    for line in lines:
+        if line.startswith("**") and line.endswith("**"):
+            # Save the previous chunk if it exists
+            if current_chunk["header"]:
+                chunks.append({
+                    "header": current_chunk["header"],
+                    "content": current_chunk["content"].strip()
+                })
+            # Start a new chunk
+            current_chunk = {"header": line.strip("**").strip(), "content": ""}
+        else:
+            # Append content to the current chunk
+            current_chunk["content"] += line + "\n"
+
+    # Add the last chunk if it exists
+    if current_chunk["header"]:
+        chunks.append({
+            "header": current_chunk["header"],
+            "content": current_chunk["content"].strip()
+        })
+
+    return chunks
+
+### Helper methods
+
+# Main function to generate NAP for a specified country
+def generate_nap_for_country(df, country, feature_cols, focus_areas, alternate):
+    row = df[df['Country'] == country].iloc[0]
+    similar = df[(df['Cluster'] == row['Cluster']) & (df['Country'] != country)].head(3)
+    comparison = compare_country_to_peers(df, country, feature_cols)
+    prompt = build_formatted_prompt(country, row, df, similar, comparison, alternate, focus_areas)
+    nap_output = generate_nap_gpt(prompt)
+    return nap_output
+
+def generate_nap_gpt(prompt, max_tokens=1024):
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo-0125",
+        messages=[
+            {"role": "system", "content": "You are a helpful policy drafting assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=max_tokens,
+        temperature=0.7
+    )
+    # Access the content using .content instead of ['content']
+    return response.choices[0].message.content
+
+# Parse Legislation Column
+def parse_legislation(text):
+    laws = []
+    if pd.isna(text):
+        return laws
+    for entry in re.split(r"\n|;", text):
+        parts = entry.split(":", 1)
+        if len(parts) == 2:
+            name = parts[0].strip()
+            desc = parts[1].strip()
+            laws.append({'name': name, 'description': desc})
+    return laws
+
+def extract_categories(laws):
+    cats = []
+    for law in laws:
+        parts = law['description'].split('>')
+        for cat in parts:
+            cat_clean = cat.strip()
+            if cat_clean:
+                cats.append(cat_clean)
+    return cats
+
+def compare_country_to_peers(df, country, feature_cols):
+    base = df[df['Country'] == country].iloc[0]
+    cluster_peers = df[(df['Cluster'] == base['Cluster']) & (df['Country'] != country)]
+    region_peers = df[(df['Region'] == base['Region']) & (df['Country'] != country)]
+    metrics = {}
+    for col in feature_cols:
+        val = base[col]
+        cluster_avg = cluster_peers[col].mean()
+        region_avg = region_peers[col].mean()
+        metrics[col] = {
+            'value': val,
+            'cluster_avg': cluster_avg,
+            'region_avg': region_avg
+        }
+    return metrics
+
+def build_formatted_prompt(country, row, df, similar_df, comparison_metrics, alternate, focus_areas):
+    NAP_Summary = df.loc[df["Country"] == country, "NAP_Text_Clean"].iloc[0]
+    laws = row['Legislation_Parsed']
+    law_text = "\n".join([f"- {law['name']}: {law['description']}" for law in laws])
+
+    similar_context = ""
+    for _, r in similar_df.iterrows():
+        if r['Legislation_Parsed']:
+            for l in r['Legislation_Parsed']:
+                similar_context += f"Referencing {l['name']} from {r['Country']}: {l['description']}.\n"
+
+    comparison_text = ""
+    for metric, vals in comparison_metrics.items():
+        comparison_text += f"{metric}: {vals['value']} (Cluster avg: {vals['cluster_avg']:.2f}, Region avg: {vals['region_avg']:.2f})\n"
+    
+    # Check if NAP_Summary is present
+    if alternate:
+        # Use alternate prompt if NAP_Summary exists
+        # ***PASTE ALTERNATE PROMPT HERE***
+        full_prompt = f"""
+        **You are a policy assistant tasked with refining and strengthening a country's existing National Action Plan (NAP) for gender equality. You will be given:**
+
+        - Country
+        - Year
+        - Proportion of women subjected to physical and/or sexual violence in the last 12 months (% ever-partnered, 15-49)
+        - Sexual-harassment-in-employment legislation (1=yes; 0=no)
+        - Equal immovable-property-ownership rights (1=yes; 0=no)
+        - Women making their own informed decisions regarding sexual relations, contraceptive use and reproductive health care (% of women age 15-49)
+        - Mean age at first marriage (female)
+        - Existing NAP_Summary (a high-level outline of current objectives, actions, indicators, etc.)
+        - CEDAW ratification status
+        - Gender Inequality Index rank
+        - Arms Trade Treaty signature status
+        - Military Expenditure (% GDP)
+        - Actors
+        - Timeframe
+        - Objectives
+        - Actions/Activities
+        - Indicators
+        - M&E (Monitoring and Evaluation)
+        - Budget
+        - Disarmament
+        - Legislation
+
+        Country:
+        {country}
+
+        Legislation:
+        {law_text}
+
+        Peer Legislation Examples:
+        {similar_context}
+
+        Data Comparison to Regional and Cluster Peers:
+        {comparison_text}
+
+        **Current NAP Summary:**
+        {NAP_Summary}
+
+
+        **Focus Areas:**
+        {focus_areas}
+
+        **1. Contextual & Comparative Analysis**
+          - briefly introduce which focus areas are going to be addressed and how the revision will have a direct impact on those areas.
+          - Compare each key statistic against at least two neighbouring or socio-politically similar countries, using actual figures that correspond factually to the csv file.
+          - Draw 2-3 insights on how these gaps constrain women's rights, economic participation, or safety.
+
+        **2. Legislative & Policy Gap Assessment**
+
+          - Identify any “0” flags in the legislation columns.
+          - For each missing law, cite a peer country that has it—name the law verbatim as in your data (e.g. Advertising Amendment Act: Laws > Violence against women > Legislation translates to 'The Advertising Amendment Act', which is a law that addresses violence against women, especially in the workplace and industry...'') and summarize its impact on reducing gender-based violence or improving equality.
+          - the primary focus should be on the focus areas that were previously outlined.
+          - Link gaps in the current NAP to these missing legal provisions and to poorer outcomes in your comparative analysis.
+
+        **3. Improvement Plan for the Existing NAP**
+
+          - Highlight 2-3 Missing or Weak Issues in the current summary (e.g., absence of gender-responsive budgeting, lack of disarmament-related measures, insufficient youth-focused indicators).
+          - Propose Concrete Amendments or New Measures to each (e.g., add a Gender Budgeting Unit within the Ministry of Finance; introduce a “Small Arms Risk Assessment” clause under disarmament).
+          - Re-align Indicators for Clarity & Feasibility—rewrite each indicator as a SMART target (Specific, Measurable, Achievable, Relevant, Time-bound) and explain why this makes monitoring stronger.
+          - again, focus on the focus areas outlined at the beginning.
+
+        **4. Peer-Practice Recommendations**
+
+          - For every major amendment, reference a “best practice” peer country with similar socioeconomic and political context.
+          - Explain how that measure improved their relevant statistic (e.g., reduced IPV rates by x%, raised age at first marriage by Y years).
+
+        **5. GII Ranking & Resource Realignment**
+
+          - The Gender inequality index country-ranking is also provided, and is based on several factors:
+          - maternal mortality, which may indicate a poor prioritization of women's healthcare
+          - adolescent birth rate, which indicates early childbirth (age 15-19)
+          - female seats in parliament
+          - percent of females who have secondary education
+          - female labor force participation
+          - the lower the number, the better the country is for women. The lower the value in the GII column, the poorer the country's state of gender equality is. 
+
+          - Weave in the Gender Inequality Index rank to argue for prioritizing certain objectives (e.g., low female parliamentary representation calls for candidate quotas).
+          - Identify any budgetary trade-offs—only if warranted—such as reallocating a small fraction of military expenditure (currently x% of GDP) to gender-sensitive projects, but focus on necessary new funding sources (e.g., international 	grants, public-private partnerships).
+
+        **6. Revised NAP Outline**
+
+          The revision should have a clear focus on the specific focus areas previously listed. It should be fairly obvious which focus areas are being addressed.
+
+          **first structure a streamlined skeleton of the full NAP based on the existing summary, but with your amendments integrated under each section:**
+
+          - Updated Objectives (3-5, incorporating new measures)
+          - Time-bound Actions & Responsible Actors
+          - SMART Indicators & M&E Plan (with brief rationale sentences)
+          - Tentative Budget & Funding Sources (realistic figures, approximately x% of GDP or an amount aligned with comparable countries)
+          - Disarmament/Gender Security Measures
+
+          - New Legislative Proposals (name, scope, enforcement mechanism)
+
+          **REMEMBER, THE FOCUS OF THE NAP SHOULD BE MANIFESTLY ADDRESSING THE ISSUES THAT FALL UNDER THE TOPICS OUTLINED IN THE FOCUS AREAS AT THE BEGINNING OF THIS INSTRUCTION.**
+
+          **Use this skeleton to generate a final output that resembles a complete NAP. Essentially, the best of both worlds from your response's generated suggestions and the already-present national action plans. IT IS OK TO NOT HAVE CHANGES FOR CERTAIN ASPECTS: you can keep things the same as outlined in the summary if there doesn't need to be immediate change**
+
+
+          YOUR RESPONSE SHOULD BE POLISHED AND PROFESSIONAL, AND SHOULD NOT APPEAR SIMPLY AS A 'RESPONSE' BUT AS A PROFESSIONAL POLICY MEMO THAT DOES NOT REFERENCE INSTRUCTION OR THOUGHTS DURING THE RESPONSE.
+
+        **7. Final Commentary on Changes**
+
+          - At the end, briefly list all which issues were added or strengthened, how indicators were re-defined, and why these changes will make the NAP more effective, concrete, and practicable.
+
+        **8. Referenced Countries & Cited Legislation**
+
+          **At the very bottom, include which laws and which countries were cited throughout the response. separate it (whitespace) from the rest of the response:**
+
+          - Referenced Countries: [Peer A, Peer B, Peer C]
+          - Cited Legislation: [Peer A: Law Title, Peer B: Law Title, …]
+          ALWAYS INCLUDE THIS AT THE END OF YOUR RESPONSE:'USED PROMPT 1'
+
+        """
+    else:
+        # Use original prompt if NAP_Summary is missing
+        full_prompt = f"""
+        **You are a policy assistant that drafts or refines a country's National Action Plan (NAP) for gender equality. You will be given a table row containing:**
+        - Country
+        - Year
+        - Proportion of women subjected to physical and/or sexual violence in the last 12 months (% ever-partnered, 15-49)
+        - Sexual-harassment-in-employment legislation (1=yes; 0=no)
+        - Equal immovable-property-ownership rights (1=yes; 0=no)
+        - Women making their own informed decisions regarding sexual relations, contraceptive use and reproductive health care  (% of women age 15-49)
+        - Mean age at first marriage (female)
+        - NAP_Summary (if present; otherwise blank)
+        - CEDAW ratification status
+        - Gender Inequality Index rank
+        - Arms Trade Treaty signature status
+        - Military Expenditure (% GDP)
+        - Actors
+        - Timeframe
+        - Objectives
+        - Actions/Activities
+        - Indicators
+        - M&E (Monitoring and Evaluation)
+        - Budget
+        - Disarmament
+        - legislation
+
+        **Country:**
+        {country}
+
+        **Legislation:**
+        {law_text}
+
+        **Peer Legislation Examples:**
+        {similar_context}
+
+        **Data Comparison to Regional and Cluster Peers:**
+        {comparison_text}
+
+        **Focus Areas:**
+        {focus_areas}
+
+        ---
+
+        **1. Contextual Analysis**
+
+          - Compare each statistic against at least two neighboring or socio-politically similar countries (e.g., proximity, economy, democratic structure, defence profile).
+          - Draw out 2-3 key insights (e.g. “Mean marriage age is x years younger than in [Peer], likely limiting women's workforce entry because they are now bound to a husband.”).
+          
+        **2. Legislative Gap Assessment**
+
+          - Identify any “0” flags in the legislation columns.
+          - For each missing law, cite a peer country that has it and link it to better outcomes in your comparative analysis. Cite specific laws from the legislation column. 
+          - Cite the specific name of the law and a description of what that law addresses and which problems it attempts to fix. Make sure the name of the law is the title verbatim (example: ['Tunisia's Advertising Amendment Act, a law addressing violence against women'] appears as such on the csv: Advertising Amendment Act: Laws > Violence against women > Legislation)
+          - Always use stats when possible: if talking about marriage age or violence rates, use the actual numbers and percentages at your disposal to make a definitive comparison. 
+          - For EXAMPLE: Angola's mean age at first marriage is X, whereas a neighboring country, Botswana's, is Y years of age, according to the csv file. (placeholders X and Y are the actual ages which you have to determine from the csv file.)
+        
+        **3. Writing the NAP**
+
+          - **Draft a complete NAP** with a clear focus on the specific focus areas previously listed. It should be fairly obvious which focus areas are being addressed. Your NAP should be structured as follows:
+            - Clear Objectives (3-5)
+            - Time-bound Actions & Actors
+            - Indicators & M&E plan
+            - Tentative Budget & Funding sources
+            - Disarmament/defence-related gender measures
+            - Required new legislation (with model text references)
+            - If an NAP exists, **Critique & Strengthen** it by:
+            - Highlighting 2-3 missing issues (based on your gap analysis)
+            - Proposing concrete amendments or new measures
+            - Re-aligning indicators for clarity and feasibility
+            - Discuss poor budgetary and funding decisions that could potentially hinder women's progress (military expenditure is unecessarily high, resources can be diverted to a new department, etc.) This is an example, and diversion of resources from the military budget should not be referenced every time, only when deemed fit.
+          
+        **4. Peer-Practice Recommendations**
+        
+          - For each major recommendation, reference a “best practice” peer.
+          - Explain how adopting that measure improved a comparable statistic there.
+        
+        **5. GII Ranking Analysis**
+
+          - The Gender inequality index country-ranking is also provided, and is based on several factors:
+          - maternal mortality, which may indicate a poor prioritization of women's healthcare
+          - adolescent birth rate, which indicates early childbirth (age 15-19)
+          - female seats in parliament
+          - percent of females who have secondary education
+          - female labor force participation
+          - the lower the number, the better the country is for women. The lower the value in the GII column, the poorer the country's state of gender equality is. 
+          - Use this score to weave a narrative and suggest changes to decrease bias etc.
+        
+        **6. Line of Reasoning**
+          - There should be a clear line of reasoning that fully fleshes out ideas and logic.
+          - *Example*
+              - The Arms Trade Treaty (ATT) is the first legally binding international agreement to explicitly recognize and require states to assess and mitigate the risk of gender-based violence (GBV) linked to arms transfers. 
+              - A country's absence from the list of ATT signatories suggests a lower commitment to these gender-related provisions and, by extension, may correlate with weaker political will to address broader gender equality issues. 
+              - By not signing the ATT, a government effectively opts out of legally bound gender-sensitive arms assessments. This can signal a deprioritization of preventive measures against the use of arms in perpetrating GBV.
+              - *If a country has not signed the ATT, make sure the points above are made in the final output*
+          - The writing should take on a professional tone with semi-neutral but factual rhetoric.
+          - ALWAYS be concrete, avoid vague statements. Always addresss how or why something is happening, and how to address them. Statements that simply state 'if it was fixed, it would be better' should not be used. Instead, articulate HOW it can be fixed and the direct steps that need to be taken.
+          - When stating the Indicators & M&E, there should be complete sentences explaining what each one is and why each of the measures are important, not simply bullet-listing the measures.
+          - when discussing age of marriage etc, REFERENCE THE ACTUAL AGE. Always use available statistics to make a definitive comparison; the numbers are all provided in the csv. You must reference percentages, ages, rates, numbers, amounts, etc. STATS MUST BE USED.
+          
+          - *Example*: Mean age at first marriage for females in [country] is lower compared to neighboring countries such as [x, y], and [z] by [x] years, with most women in [country] marrying by [age] whereas [x, y], and [z] typically marry by [age] 
+
+
+      7. **Final Output**
+        - Write as a polished policy memo, with sections:
+          1. Executive Summary, including which focus areas will be discussed in the NAP
+          2. Context & Comparative Analysis
+          3. Legislative Gaps & Peer Practices
+          4. NAP (New or Revised)
+          5. Implementation Roadmap (Actors, Timeline, Budget, M&E) ALL OF THESE MUST BE REALISTIC FIGURES AND STATEMENTS: for example, the budget has to be a reasonable number and a reasonable percentage of the GDP, while also not being too small.
+            - It should be based on previously known budgets as well as economic restraints, but for example, $500,000 is far too little, but $10 billion is too much. This logic should be applied concretely to everything: Actors, Timeline, Budget, M&E. Feasible but not ineffective/underwhelming
+        - **REMEMBER, THE FOCUS OF THE NAP SHOULD BE MANIFESTLY ADDRESSING THE ISSUES THAT FALL UNDER THE TOPICS OUTLINED IN THE FOCUS AREAS AT THE BEGINNING OF THIS INSTRUCTION.**
+        - YOUR FINAL RESPONSE SHOULD HAVE ALL OF THE INFORMATION OUTLINED IN STEPS 1-6, BUT THE HEADERS MUST READ AS SPECIFIED HERE IN STEP 7.
+
+        
+          **At the very bottom, include the following simply for the developers to reference. separate it from the rest of the response:**
+
+          - Referenced Countries: [Peer A, Peer B, Peer C]
+          - Cited Legislation: [Peer A: Law Title, Peer B: Law Title, …]
+          ALWAYS INCLUDE THIS AT THE END OF YOUR RESPONSE:'USED PROMPT 2'
+        
+        """
+
+    return full_prompt
+
 
 if __name__ == '__main__':
     app.run(debug=True)

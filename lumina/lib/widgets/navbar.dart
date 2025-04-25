@@ -38,26 +38,34 @@ class LuminaNavbar extends StatelessWidget {
                         Icon(
                           Icons.auto_awesome,
                           size: 16,
-                          color: currentPage == 'explore'
-                              ? const Color.fromARGB(255, 255, 102, 0)
-                              : Colors.black54,
+                          color:
+                              currentPage == 'explore'
+                                  ? const Color.fromARGB(255, 255, 102, 0)
+                                  : Colors.black54,
                         ),
                         SizedBox(width: 4),
                         TextButton(
                           onPressed: () {
                             if (currentPage != 'explore') {
-                              Navigator.pushReplacementNamed(context, '/explore');
+                              Navigator.pushReplacementNamed(
+                                context,
+                                '/explore',
+                              );
                             }
                           },
                           style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                           ),
                           child: Text(
                             "Explore",
                             style: TextStyle(
-                              color: currentPage == 'explore'
-                                  ? const Color.fromARGB(255, 255, 102, 0)
-                                  : Colors.black,
+                              color:
+                                  currentPage == 'explore'
+                                      ? const Color.fromARGB(255, 255, 102, 0)
+                                      : Colors.black,
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                             ),
@@ -74,14 +82,18 @@ class LuminaNavbar extends StatelessWidget {
                         }
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                       ),
                       child: Text(
                         "Post a Story",
                         style: TextStyle(
-                          color: currentPage == 'postStory'
-                              ? const Color.fromARGB(255, 255, 102, 0)
-                              : Colors.black,
+                          color:
+                              currentPage == 'postStory'
+                                  ? const Color.fromARGB(255, 255, 102, 0)
+                                  : Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
@@ -92,18 +104,54 @@ class LuminaNavbar extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         if (currentPage != 'dataCenter') {
-                          Navigator.pushReplacementNamed(context, '/dataCenter');
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/dataCenter',
+                          );
                         }
                       },
                       style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                       ),
                       child: Text(
                         "Data Center",
                         style: TextStyle(
-                          color: currentPage == 'dataCenter'
-                              ? const Color.fromARGB(255, 255, 102, 0)
-                              : Colors.black,
+                          color:
+                              currentPage == 'dataCenter'
+                                  ? const Color.fromARGB(255, 255, 102, 0)
+                                  : Colors.black,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    // Policy Maker
+                    TextButton(
+                      onPressed: () {
+                        if (currentPage != 'luminaLens') {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/luminaLens',
+                          );
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                      ),
+                      child: Text(
+                        "LuminaLens",
+                        style: TextStyle(
+                          color:
+                              currentPage == 'luminaLens'
+                                  ? const Color.fromARGB(255, 255, 102, 0)
+                                  : Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),

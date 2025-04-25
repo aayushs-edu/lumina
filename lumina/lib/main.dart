@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lumina/connected_map_page.dart';
 import 'package:lumina/firebase_options.dart';
+import 'package:lumina/lumina_lens_map.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'package:lumina/widgets/spotlight_panel.dart';
 import 'package:lumina/widgets/waving_leaf.dart';
@@ -14,12 +16,12 @@ import 'explore_page.dart';
 import 'widgets/navbar.dart';
 import 'widgets/revolving_stories_dashboard.dart';
 import 'widgets/particle_background.dart';
+import 'policy_maker_page.dart';
+import 'package:lumina/world_map.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(LuminaApp());
 }
 
@@ -56,6 +58,7 @@ class LuminaApp extends StatelessWidget {
         '/postStory': (context) => PostStoryPage(),
         '/dataCenter': (context) => DataCenterPage(),
         '/explore': (context) => ExplorePage(),
+        '/luminaLens': (context) => LuminaLensPage(),
       },
     );
   }
@@ -71,8 +74,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _gradientController;
-  String? spotlightTheme;  // New state for today's spotlight theme
-  
+  String? spotlightTheme; // New state for today's spotlight theme
+
   @override
   void initState() {
     super.initState();
@@ -82,10 +85,11 @@ class _HomePageState extends State<HomePage>
     )..repeat(reverse: true);
     _loadSpotlightTheme();
   }
-  
+
   Future<void> _loadSpotlightTheme() async {
     // Get all stories and extract unique themes
-    List<Map<String, dynamic>> storiesData = await FirebaseService.getAllStories();
+    List<Map<String, dynamic>> storiesData =
+        await FirebaseService.getAllStories();
     Set<String> themesSet = {};
     for (var story in storiesData) {
       if (story.containsKey('themes')) {
@@ -104,13 +108,13 @@ class _HomePageState extends State<HomePage>
       });
     }
   }
-  
+
   @override
   void dispose() {
     _gradientController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,17 +185,17 @@ class _HomePageState extends State<HomePage>
                       ),
                       SizedBox(height: 100),
                       // Theme panel
-                    
+
                       // The existing spotlight panel (unchanged)
-                      SpotlightPanel(
-                        spotlightTheme: spotlightTheme,
-                      ),
+                      SpotlightPanel(spotlightTheme: spotlightTheme),
 
                       SizedBox(height: 40),
                       // Display revolving dashboard only if spotlightTheme is loaded
                       spotlightTheme == null
                           ? CircularProgressIndicator()
-                          : RevolvingStoriesDashboard(spotlightTheme: spotlightTheme!),
+                          : RevolvingStoriesDashboard(
+                            spotlightTheme: spotlightTheme!,
+                          ),
                       SizedBox(height: 40),
                       // New separator between the revolving dashboard and the world map
                       Container(
@@ -220,17 +224,27 @@ class _HomePageState extends State<HomePage>
                               children: [
                                 // Inequality Atlas header with red to orange gradient
                                 ShaderMask(
-                                  shaderCallback: (bounds) => LinearGradient(
-                                    colors: [Colors.red, Colors.orange],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                                  shaderCallback:
+                                      (bounds) => LinearGradient(
+                                        colors: [Colors.red, Colors.orange],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ).createShader(
+                                        Rect.fromLTWH(
+                                          0,
+                                          0,
+                                          bounds.width,
+                                          bounds.height,
+                                        ),
+                                      ),
                                   child: Text(
                                     "Inequality Atlas",
                                     style: GoogleFonts.baloo2(
                                       fontSize: 36,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white, // This will be masked by the gradient
+                                      color:
+                                          Colors
+                                              .white, // This will be masked by the gradient
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -252,10 +266,14 @@ class _HomePageState extends State<HomePage>
                           ],
                         ),
                       ),
-                      SizedBox(height: 60), // Increased spacing between sections
+                      SizedBox(
+                        height: 60,
+                      ), // Increased spacing between sections
                       SizedBox(height: 60),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40), // Fixed horizontal padding
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                        ), // Fixed horizontal padding
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,27 +289,38 @@ class _HomePageState extends State<HomePage>
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withOpacity(0.3),
                                         width: 1,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(0.1),
                                           blurRadius: 8,
                                           spreadRadius: 0,
                                           offset: Offset(0, 0),
                                         ),
                                       ],
                                     ),
-                                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 32,
+                                      vertical: 40,
+                                    ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
                                         RichText(
                                           textAlign: TextAlign.center,
                                           text: TextSpan(
                                             // Use black for the non-gradient parts
-                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.headlineSmall?.copyWith(
                                               fontSize: 36,
                                               color: Colors.black,
                                               fontWeight: FontWeight.bold,
@@ -299,21 +328,46 @@ class _HomePageState extends State<HomePage>
                                             children: [
                                               TextSpan(text: "Join the "),
                                               WidgetSpan(
-                                                alignment: PlaceholderAlignment.baseline,
-                                                baseline: TextBaseline.alphabetic,
+                                                alignment:
+                                                    PlaceholderAlignment
+                                                        .baseline,
+                                                baseline:
+                                                    TextBaseline.alphabetic,
                                                 child: ShaderMask(
-                                                  shaderCallback: (bounds) => LinearGradient(
-                                                    colors: [Colors.red, Colors.orange],
-                                                    begin: Alignment.topLeft,
-                                                    end: Alignment.bottomRight,
-                                                  ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                                                  shaderCallback:
+                                                      (
+                                                        bounds,
+                                                      ) => LinearGradient(
+                                                        colors: [
+                                                          Colors.red,
+                                                          Colors.orange,
+                                                        ],
+                                                        begin:
+                                                            Alignment.topLeft,
+                                                        end:
+                                                            Alignment
+                                                                .bottomRight,
+                                                      ).createShader(
+                                                        Rect.fromLTWH(
+                                                          0,
+                                                          0,
+                                                          bounds.width,
+                                                          bounds.height,
+                                                        ),
+                                                      ),
                                                   child: Text(
                                                     "lumina",
-                                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                                      fontSize: 36,
-                                                      color: Colors.white, // Base color here doesn't matter
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .headlineSmall
+                                                        ?.copyWith(
+                                                          fontSize: 36,
+                                                          color:
+                                                              Colors
+                                                                  .white, // Base color here doesn't matter
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                   ),
                                                 ),
                                               ),
@@ -324,7 +378,9 @@ class _HomePageState extends State<HomePage>
                                         SizedBox(height: 24),
                                         Text(
                                           "Share your experience and help illuminate hidden stories. Your voice matters!",
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
                                             fontSize: 24,
                                             color: Colors.black54,
                                           ),
@@ -334,31 +390,46 @@ class _HomePageState extends State<HomePage>
                                         Container(
                                           decoration: BoxDecoration(
                                             gradient: LinearGradient(
-                                              colors: [Colors.red, Colors.orange],
+                                              colors: [
+                                                Colors.red,
+                                                Colors.orange,
+                                              ],
                                               begin: Alignment.topLeft,
                                               end: Alignment.bottomRight,
                                             ),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.transparent,
+                                              backgroundColor:
+                                                  Colors.transparent,
                                               shadowColor: Colors.transparent,
-                                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 24,
+                                                vertical: 12,
+                                              ),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                             ),
                                             onPressed: () {
-                                              Navigator.pushNamed(context, '/postStory');
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/postStory',
+                                              );
                                             },
                                             child: Text(
                                               "Share Your Story",
-                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                    fontSize: 24,
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodyMedium?.copyWith(
+                                                fontSize: 24,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -393,26 +464,37 @@ class _HomePageState extends State<HomePage>
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withOpacity(0.3),
                                         width: 1,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(0.1),
                                           blurRadius: 8,
                                           spreadRadius: 0,
                                           offset: Offset(0, 0),
                                         ),
                                       ],
                                     ),
-                                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 32,
+                                      vertical: 40,
+                                    ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
                                         RichText(
                                           textAlign: TextAlign.center,
                                           text: TextSpan(
-                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.headlineSmall?.copyWith(
                                               fontSize: 36,
                                               color: Colors.black,
                                               fontWeight: FontWeight.bold,
@@ -420,21 +502,44 @@ class _HomePageState extends State<HomePage>
                                             children: [
                                               TextSpan(text: "What is "),
                                               WidgetSpan(
-                                                alignment: PlaceholderAlignment.baseline,
-                                                baseline: TextBaseline.alphabetic,
+                                                alignment:
+                                                    PlaceholderAlignment
+                                                        .baseline,
+                                                baseline:
+                                                    TextBaseline.alphabetic,
                                                 child: ShaderMask(
-                                                  shaderCallback: (bounds) => LinearGradient(
-                                                    colors: [Colors.red, Colors.orange],
-                                                    begin: Alignment.topLeft,
-                                                    end: Alignment.bottomRight,
-                                                  ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                                                  shaderCallback:
+                                                      (
+                                                        bounds,
+                                                      ) => LinearGradient(
+                                                        colors: [
+                                                          Colors.red,
+                                                          Colors.orange,
+                                                        ],
+                                                        begin:
+                                                            Alignment.topLeft,
+                                                        end:
+                                                            Alignment
+                                                                .bottomRight,
+                                                      ).createShader(
+                                                        Rect.fromLTWH(
+                                                          0,
+                                                          0,
+                                                          bounds.width,
+                                                          bounds.height,
+                                                        ),
+                                                      ),
                                                   child: Text(
                                                     "lumina",
-                                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                                      fontSize: 36,
-                                                      color: Colors.white,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .headlineSmall
+                                                        ?.copyWith(
+                                                          fontSize: 36,
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                   ),
                                                 ),
                                               ),
@@ -445,7 +550,9 @@ class _HomePageState extends State<HomePage>
                                         SizedBox(height: 24),
                                         Text(
                                           "Lumina is a platform dedicated to illuminating hidden inequalities and sharing stories of marginalized communities. Our goal is to bring awareness, spark dialogue, and empower individuals to create change. Join us in uncovering untold stories and shaping a more equitable future.",
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
                                             fontSize: 24,
                                             color: Colors.black54,
                                           ),
@@ -459,7 +566,8 @@ class _HomePageState extends State<HomePage>
                                     top: -20,
                                     left: -20,
                                     child: WavingLeaf(
-                                      assetPath: 'assets/leaf_top_left_yellow.png',
+                                      assetPath:
+                                          'assets/leaf_top_left_yellow.png',
                                       width: 100,
                                       initialAngle: 0,
                                       amplitude: 0.05,
@@ -472,7 +580,9 @@ class _HomePageState extends State<HomePage>
                           ],
                         ),
                       ),
-                      SizedBox(height: 60), // Additional spacing before the footer
+                      SizedBox(
+                        height: 60,
+                      ), // Additional spacing before the footer
                       // Footer with copyright
                       Container(
                         width: double.infinity,
@@ -480,7 +590,10 @@ class _HomePageState extends State<HomePage>
                         child: Text(
                           "lumina © 2025",
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary, // Now using primary (orange) color
+                            color:
+                                Theme.of(context)
+                                    .colorScheme
+                                    .primary, // Now using primary (orange) color
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                           ),

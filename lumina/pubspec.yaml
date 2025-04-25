@@ -34,6 +34,13 @@ dependencies:
   http: ^0.13.0
   xml: ^6.5.0
   path_drawing: ^1.0.1
+  three_dart: ^0.0.16
+  three_dart_jsm: ^0.0.10
+  flutter_gl: ^0.0.21
+  flutter_charts: ^0.5.2
+  flutter_svg: ^2.0.9
+  vector_math: ^2.1.4
+  animated_text_kit: ^4.2.3
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -46,8 +53,9 @@ dependencies:
   csv: ^6.0.0
   file_picker: ^10.0.0
   path_provider: ^2.1.5
-  image: ^4.5.4
+  image: ^3.3.0
   cached_network_image: ^3.3.1
+  charts_flutter: ^0.12.0
 
 dev_dependencies:
   flutter_test:
