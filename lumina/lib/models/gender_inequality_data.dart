@@ -320,7 +320,7 @@ class GenderInequalityDataManager {
   Future<void> loadData() async {
     if (_data.isEmpty) {
       print('Starting to load GII data...');
-      final String csvString = await rootBundle.loadString('assets/gii.csv');
+      final String csvString = await rootBundle.loadString('assets/data/gii.csv');
       // Use CsvToListConverter to parse the CSV properly.
       final List<List<dynamic>> rows = const CsvToListConverter().convert(csvString);
 
