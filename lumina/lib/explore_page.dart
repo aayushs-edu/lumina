@@ -488,98 +488,118 @@ class _ExplorePageState extends State<ExplorePage> {
         preferredSize: Size.fromHeight(kToolbarHeight),
         child: LuminaNavbar(currentPage: 'explore'),
       ),
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
-          child: Column(
-            children: [
-              // Search bar and filter icon row...
-              Row(
+      body: Stack(
+        children: [
+          // Background gradient layer
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.5,
+                colors: [
+                  Colors.white,
+                  Color.fromARGB(255, 255, 179, 113),
+                ],
+                stops: [0.1, 1.0],
+              ),
+            ),
+          ),
+          // Content layer
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 60, left: 16, right: 16),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search stories...',
-                          prefixIcon: Icon(Icons.search),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 15),
+                  // Search bar and filter icon row...
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: TextField(
+                            controller: searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search stories...',
+                              prefixIcon: Icon(Icons.search),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 15),
+                            ),
+                            onChanged: (value) {
+                              searchQuery = value;
+                            },
+                            onSubmitted: (_) => _search(),
+                          ),
                         ),
-                        onChanged: (value) {
-                          searchQuery = value;
-                        },
-                        onSubmitted: (_) => _search(),
                       ),
-                    ),
+                      SizedBox(width: 10),
+                      Container(
+                        height: 50,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.tune),
+                          onPressed: _showFilterOptions,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 10),
-                  Container(
-                    height: 50,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.tune),
-                      onPressed: _showFilterOptions,
-                    ),
+                  // Display applied filters if any exist.
+                  _buildAppliedFilters(),
+                  SizedBox(height: 16),
+                  // Continue with the regular story list:
+                  Expanded(
+                    child: isLoading
+                        ? Center(child: CircularProgressIndicator())
+                        : stories.isEmpty
+                            ? Center(child: Text('No stories found'))
+                            : Builder(
+                                builder: (context) {
+                                  List<Story> displayedStories = List.from(stories);
+                                  if (currentSpotlight.isNotEmpty) {
+                                    // Sort the stories by likes descending.
+                                    displayedStories.sort((a, b) => b.likes.compareTo(a.likes));
+                                  }
+                                  return ScrollConfiguration(
+                                    behavior: NoScrollbarBehavior(),
+                                    child: ListView.builder(
+                                      itemCount: displayedStories.length,
+                                      itemBuilder: (context, index) {
+                                        final story = displayedStories[index];
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 16.0),
+                                          child: ExpandableStoryCard(
+                                            storyId: story.id,
+                                            title: story.title,
+                                            themes: story.themes.isNotEmpty ? story.themes : ['Other'],
+                                            country: story.country,
+                                            shortContent: story.story.length > 100
+                                                ? '${story.story.substring(0, 100)}...'
+                                                : story.story,
+                                            fullContent: story.story,
+                                            likes: story.likes,
+                                            currentSpotlight: currentSpotlight,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
                   ),
                 ],
               ),
-              // Display applied filters if any exist.
-              _buildAppliedFilters(),
-              SizedBox(height: 16),
-              // Continue with the regular story list:
-              Expanded(
-                child: isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : stories.isEmpty
-                        ? Center(child: Text('No stories found'))
-                        : Builder(
-                            builder: (context) {
-                              List<Story> displayedStories = List.from(stories);
-                              if (currentSpotlight.isNotEmpty) {
-                                // Sort the stories by likes descending.
-                                displayedStories.sort((a, b) => b.likes.compareTo(a.likes));
-                              }
-                              return ScrollConfiguration(
-                                behavior: NoScrollbarBehavior(),
-                                child: ListView.builder(
-                                  itemCount: displayedStories.length,
-                                  itemBuilder: (context, index) {
-                                    final story = displayedStories[index];
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 16.0),
-                                      child: ExpandableStoryCard(
-                                        storyId: story.id,
-                                        title: story.title,
-                                        themes: story.themes.isNotEmpty ? story.themes : ['Other'],
-                                        country: story.country,
-                                        shortContent: story.story.length > 100
-                                            ? '${story.story.substring(0, 100)}...'
-                                            : story.story,
-                                        fullContent: story.story,
-                                        likes: story.likes,
-                                        currentSpotlight: currentSpotlight,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -264,6 +264,23 @@ class _HomePageState extends State<HomePage>
                           ],
                         ),
                       ),
+                      SizedBox(height: 80),
+                      // Add the divider after the world map
+                      Container(
+                        height: 4,
+                        width: MediaQuery.of(context).size.width * 0.8,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Colors.orangeAccent,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                       SizedBox(
                         height: 60,
                       ), // Increased spacing between sections
