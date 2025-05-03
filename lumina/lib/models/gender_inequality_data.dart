@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math';// Add this import for file operations
+import 'dart:html' as html; // Import the html package
 import 'package:flutter/services.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'package:csv/csv.dart';
@@ -319,74 +320,19 @@ class GenderInequalityDataManager {
 
   Future<void> loadData() async {
     if (_data.isEmpty) {
-      print('Starting to load GII data...');
-      final String csvString = await rootBundle.loadString('assets/data/gii.csv');
-      // Use CsvToListConverter to parse the CSV properly.
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvString);
+      print('Starting to load GII data from JSON...');
+      try {
+        // Load the JSON file from assets
+        final String jsonString = await rootBundle.loadString('assets/data/gii.json');
+        final List<dynamic> jsonData = jsonDecode(jsonString);
 
-      List<GenderInequalityData> tempData = [];
-      // Print header row for debugging.
-      if (rows.isNotEmpty) {
-        // print('CSV Header: ${rows[0]}');
+        // Parse the JSON data into GenderInequalityData objects
+        _data = jsonData.map((item) => GenderInequalityData.fromJson(item)).toList();
+
+        print('Successfully loaded ${_data.length} entries from gii.json.');
+      } catch (e) {
+        print('Error loading GII data from JSON: $e');
       }
-      // Assuming first row is header, process from row 1.
-      for (int i = 1; i < rows.length; i++) {
-        final row = rows[i];
-        // print('Processing row $i: $row');  // Debug print each row.
-        if (row.length < 11) {
-          // print('Row $i skipped (not enough columns).');
-          continue; // Expecting 11 columns.
-        }
-        try {
-          final data = GenderInequalityData(
-            country: row[0].toString().trim(),
-            hdiRank: int.tryParse(row[3].toString().trim()) ?? 0,
-            isoCode: GenderInequalityData.getIsoCode(row[0].toString().trim()),
-            genderInequalityIndex: double.tryParse(row[2].toString().trim()) ?? 0.0,
-            maternalMortality: double.tryParse(row[4].toString().trim()) ?? 0.0,
-            adolescentBirthRate: double.tryParse(row[5].toString().trim()) ?? 0.0,
-            parliamentSeatsWomen: double.tryParse(row[6].toString().trim()) ?? 0.0,
-            educationFemale: double.tryParse(row[7].toString().trim()) ?? 0.0,
-            educationMale: double.tryParse(row[8].toString().trim()) ?? 0.0,
-            labourForceFemale: double.tryParse(row[9].toString().trim()) ?? 0.0,
-            labourForceMale: double.tryParse(row[10].toString().trim()) ?? 0.0,
-            storyCount: 0, // Default value; will be updated from Firebase.
-          );
-          // print('Constructed data from row $i: ${data.toJson()}');  // Debug print the object.
-          tempData.add(data);
-        } catch (e) {
-          print('Error processing row $i: $e');
-          continue;
-        }
-      }
-      print('Finished loading CSV data. Total countries loaded (before Firebase update): ${tempData.length}');
-
-      // Fetch story counts from Firebase for each country and update the data accordingly.
-      List<Future<GenderInequalityData>> futures = tempData.map((data) async {
-        final count = await FirebaseService().getStoryCountForCountry(data.country);
-        // print('Firebase story count for ${data.country}: $count');
-        return GenderInequalityData(
-          hdiRank: data.hdiRank,
-          country: data.country,
-          isoCode: data.isoCode,
-          genderInequalityIndex: data.genderInequalityIndex,
-          maternalMortality: data.maternalMortality,
-          adolescentBirthRate: data.adolescentBirthRate,
-          parliamentSeatsWomen: data.parliamentSeatsWomen,
-          educationFemale: data.educationFemale,
-          educationMale: data.educationMale,
-          labourForceFemale: data.labourForceFemale,
-          labourForceMale: data.labourForceMale,
-          storyCount: count,
-        );
-      }).toList();
-
-      _data = await Future.wait(futures);
-      print('Finished loading GII data with story counts. Total countries loaded: ${_data.length}');
-      // Print all final data for debugging.
-      // for (var d in _data) {
-      //   print('Final data: ${d.toJson()}');
-      // }
     }
   }
 
