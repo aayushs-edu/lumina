@@ -11,7 +11,6 @@ import 'package:lumina/world_map.dart';
 import 'todays_topic_page.dart';
 import 'post_story_page.dart';
 import 'create_lumina_post_page.dart';
-import 'data_center_page.dart';
 import 'explore_page.dart';
 import 'widgets/navbar.dart';
 import 'widgets/revolving_stories_dashboard.dart';
@@ -56,7 +55,6 @@ class LuminaApp extends StatelessWidget {
       routes: {
         '/todaysTopic': (context) => TodaysTopicPage(),
         '/postStory': (context) => PostStoryPage(),
-        '/dataCenter': (context) => DataCenterPage(),
         '/explore': (context) => ExplorePage(),
         '/luminaLens': (context) => LuminaLensPage(),
       },

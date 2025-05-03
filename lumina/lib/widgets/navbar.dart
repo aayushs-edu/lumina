@@ -100,35 +100,6 @@ class LuminaNavbar extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: 8),
-                    // Data Center
-                    TextButton(
-                      onPressed: () {
-                        if (currentPage != 'dataCenter') {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/dataCenter',
-                          );
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                      ),
-                      child: Text(
-                        "Data Center",
-                        style: TextStyle(
-                          color:
-                              currentPage == 'dataCenter'
-                                  ? const Color.fromARGB(255, 255, 102, 0)
-                                  : Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
                     // Policy Maker
                     TextButton(
                       onPressed: () {
