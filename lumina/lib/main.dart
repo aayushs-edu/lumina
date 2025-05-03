@@ -603,7 +603,7 @@ class _HomePageState extends State<HomePage>
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 40),
                         child: Text(
-                          "lumina © 2025",
+                          "lumina 2025",
                           style: TextStyle(
                             color:
                                 Theme.of(context)
