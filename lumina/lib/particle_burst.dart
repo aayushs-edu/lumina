@@ -39,7 +39,7 @@ class _ParticleBurstState extends State<ParticleBurst> with SingleTickerProvider
   void _generateParticles() {
     for (int i = 0; i < 30; i++) {
       final angle = _random.nextDouble() * 2 * pi;
-      final speed = _random.nextDouble() * 4 + 2;
+      final speed = _random.nextDouble() * 2 + 1; // Reduced speed
       _particles.add(
         Particle(
           position: widget.origin,
@@ -57,8 +57,8 @@ class _ParticleBurstState extends State<ParticleBurst> with SingleTickerProvider
     final time = _controller.value;
 
     for (var p in _particles) {
-      p.position += p.velocity;
-      p.life -= 0.02;
+      p.position += p.velocity * 0.5; // Slow down movement
+      p.life -= 0.01; // Decrease life slower
     }
 
     _particles.removeWhere((p) => p.life <= 0);

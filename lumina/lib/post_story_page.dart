@@ -10,7 +10,7 @@ class PostStoryPage extends StatefulWidget {
 }
 
 class _PostStoryPageState extends State<PostStoryPage> {
-  bool _postToFirebase = false; // Set to false for testing only
+  bool _postToFirebase = true; // Set to false for testing only
 
   String? selectedTheme1;
   String? selectedTheme2; // Optional second theme
@@ -100,6 +100,7 @@ class _PostStoryPageState extends State<PostStoryPage> {
             themes: themesSelected,
             keywords: [], // Optionally add keyword extraction here
           );
+          print("Story posted to Firebase successfully.");
         } else {
           // For testing - simulate a delay without posting
           print("Firebase posting is disabled for testing.");
