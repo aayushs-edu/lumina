@@ -44,7 +44,7 @@ class _CreateLuminaPostPageState extends State<CreateLuminaPostPage> {
   String _colorScheme = "orange";
 
   // Update this variable with your backend URL.
-  final String currentBackendUrl = "https://1741-73-189-131-67.ngrok-free.app";
+  final String currentBackendUrl = "https://lumina-backend-x5as.onrender.com/";
 
   @override
   void initState() {
