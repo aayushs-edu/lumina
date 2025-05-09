@@ -117,6 +117,33 @@ class FirebaseService {
     }).toList();
   }
 
+  static Future<List<Map<String, dynamic>>> getTopStoriesByCountryAndThemes(
+      String country, List<String> themes, int limit) async {
+    try {
+      print("Fetching top stories for country: $country with themes: $themes and limit: $limit");
+
+      // Query Firestore for stories matching the country and themes
+      QuerySnapshot querySnapshot = await _storiesCollection
+          .where('country', isEqualTo: country)
+          .where('themes', arrayContainsAny: themes)
+          .orderBy('likes', descending: true)
+          .limit(limit)
+          .get();
+
+      // Map the results to a list of story objects
+      return querySnapshot.docs.map((doc) {
+        Map<String, dynamic> data = {
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        };
+        return data;
+      }).toList();
+    } catch (e) {
+      print("Error fetching top stories for country and themes: $e");
+      return [];
+    }
+  }
+
   // Modified getRandomStories without calling _cleanThemes
   static Future<List<Map<String, dynamic>>> getRandomStories(int limit) async {
     QuerySnapshot querySnapshot = await _storiesCollection.get();

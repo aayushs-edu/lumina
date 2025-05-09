@@ -39,10 +39,13 @@ class _ParticleBurstState extends State<ParticleBurst> with SingleTickerProvider
   void _generateParticles() {
     for (int i = 0; i < 30; i++) {
       final angle = _random.nextDouble() * 2 * pi;
-      final speed = _random.nextDouble() * 2 + 1; // Reduced speed
+      final speed = _random.nextDouble() * 2 + 1; // Random speed
+      final initialX = _random.nextDouble() * MediaQuery.of(context).size.width; // Random X position
+      final initialY = _random.nextDouble() * MediaQuery.of(context).size.height; // Random Y position
+
       _particles.add(
         Particle(
-          position: widget.origin,
+          position: Offset(initialX, initialY), // Start at a random position
           velocity: Offset(cos(angle), sin(angle)) * speed,
           life: 1.0,
           radius: _random.nextDouble() * 3 + 2,

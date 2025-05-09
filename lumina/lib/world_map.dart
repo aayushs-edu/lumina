@@ -388,7 +388,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
             SizedBox(height: 24),
             Center(
               child: ConstrainedBox(
-                // Adjust maxWidth to make the section thinner (e.g. 80% of screen width)
                 constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
                 child: Container(
                   height: 500,
@@ -423,7 +422,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                               ),
                               _regions.isEmpty
                                   ? Center(child: CircularProgressIndicator())
-                                  : Center( // Wrap FittedBox with Center to keep the map centered
+                                  : Center(
                                       child: FittedBox(
                                         fit: BoxFit.contain,
                                         child: SizedBox(
@@ -446,7 +445,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                         top: 16,
                         bottom: 16,
                         right: 16,
-                        width: 180, // Increased width from 120 to 180
+                        width: 180,
                         child: Container(
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -466,6 +465,19 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                             ],
                           ),
                           child: _buildCountryInfoPanel(),
+                        ),
+                      ),
+                      // Add the tip at the bottom left
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        child: Text(
+                          "Click on a country to see valuable data!",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ),
                     ],
