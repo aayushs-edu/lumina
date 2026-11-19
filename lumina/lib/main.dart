@@ -14,7 +14,7 @@ import 'create_lumina_post_page.dart';
 import 'explore_page.dart';
 import 'widgets/navbar.dart';
 import 'widgets/revolving_stories_dashboard.dart';
-import 'widgets/particle_background.dart';
+import 'widgets/hero/lumina_hero.dart';
 import 'policy_maker_page.dart';
 import 'package:lumina/world_map.dart';
 
@@ -63,33 +63,14 @@ class LuminaApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  final GlobalKey luminaTextKey = GlobalKey();
-
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _gradientController;
-  // Today's spotlight theme. Picked from the fixed theme list so the home page
-  // doesn't have to download every story just to find the distinct themes.
+class _HomePageState extends State<HomePage> {
+  // Today's spotlight theme, from the fixed theme list.
   final String spotlightTheme = spotlightThemeFor(DateTime.now());
-
-  @override
-  void initState() {
-    super.initState();
-    _gradientController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _gradientController.dispose();
-    super.dispose();
-  }
+  final GlobalKey _spotlightKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -102,68 +83,36 @@ class _HomePageState extends State<HomePage>
       ),
       body: Stack(
         children: [
-          ParticleBackground(luminaTextKey: widget.luminaTextKey),
           Column(
             children: [
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // Initial space to center the text vertically
-                      SizedBox(height: MediaQuery.of(context).size.height / 3),
-                      // Lumina text
-                      Center(
-                        child: AnimatedBuilder(
-                          animation: _gradientController,
-                          builder: (context, child) {
-                            final progress = _gradientController.value;
-                            final gradient = LinearGradient(
-                              colors: [
-                                const Color.fromARGB(238, 255, 136, 0),
-                                const Color.fromARGB(255, 255, 20, 20),
-                                const Color.fromARGB(238, 255, 136, 0),
-                              ],
-                              stops:
-                                  [progress - 0.5, progress, progress + 0.5]
-                                      .map((stop) => stop.clamp(0.0, 1.0))
-                                      .toList(),
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            );
-                            return ShaderMask(
-                              shaderCallback:
-                                  (bounds) => gradient.createShader(bounds),
-                              child: Text(
-                                "lumina",
-                                key: widget.luminaTextKey,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineLarge?.copyWith(
-                                  // Remove glow by omitting or setting shadows to empty
-                                  shadows: [],
-                                ),
-                              ),
-                            );
+                      // Repaint boundaries keep each animated section from
+                      // repainting the rest of the page (notably the world map).
+                      RepaintBoundary(
+                        child: LuminaHero(
+                          onScrollCue: () {
+                            final ctx = _spotlightKey.currentContext;
+                            if (ctx != null) {
+                              Scrollable.ensureVisible(
+                                ctx,
+                                duration: const Duration(milliseconds: 700),
+                                curve: Curves.easeInOutCubic,
+                                alignment: 0.1,
+                              );
+                            }
                           },
                         ),
                       ),
-                      // Subtitle
-                      Center(
-                        child: Text(
-                          "illuminating hidden inequalities",
-                          style: Theme.of(
-                            context,
-                          ).textTheme.headlineSmall?.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      const SizedBox(height: 24),
+                      KeyedSubtree(
+                        key: _spotlightKey,
+                        child: RepaintBoundary(
+                          child: SpotlightPanel(spotlightTheme: spotlightTheme),
                         ),
                       ),
-                      SizedBox(height: 100),
-                      // Theme panel
-
-                      // The existing spotlight panel (unchanged)
-                      SpotlightPanel(spotlightTheme: spotlightTheme),
 
                       SizedBox(height: 40),
                       RevolvingStoriesDashboard(spotlightTheme: spotlightTheme),
@@ -233,7 +182,7 @@ class _HomePageState extends State<HomePage>
                                 ),
                               ],
                             ),
-                            InteractiveWorldMap(),
+                            RepaintBoundary(child: InteractiveWorldMap()),
                           ],
                         ),
                       ),

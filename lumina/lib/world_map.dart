@@ -67,11 +67,9 @@ class GridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _InteractiveWorldMapState extends State<InteractiveWorldMap>
-    with SingleTickerProviderStateMixin {
+class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
   List<Region> _regions = [];
   final Random random = Random();
-  late AnimationController _gradientController;
 
   // Tooltip state
   OverlayEntry? _tooltipOverlay;
@@ -102,11 +100,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   @override
   void initState() {
     super.initState();
-    _gradientController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
     // Load GII data and then initialize _countryToIso and regions.
     GenderInequalityDataManager().loadData().then((_) {
       // Initialize _countryToIso after data is loaded
@@ -362,7 +355,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   void dispose() {
     _hideTooltip();
     _hoveredRegionId.dispose();
-    _gradientController.dispose();
     super.dispose();
   }
 
