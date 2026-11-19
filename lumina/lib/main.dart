@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lumina/connected_map_page.dart';
 import 'package:lumina/firebase_options.dart';
 import 'package:lumina/lumina_lens_map.dart';
-import 'package:lumina/services/firebase_service.dart';
+import 'package:lumina/models/story_themes.dart';
 import 'package:lumina/widgets/spotlight_panel.dart';
 import 'package:lumina/widgets/waving_leaf.dart';
 import 'package:lumina/world_map.dart';
@@ -72,7 +72,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _gradientController;
-  String? spotlightTheme; // New state for today's spotlight theme
+  // Today's spotlight theme. Picked from the fixed theme list so the home page
+  // doesn't have to download every story just to find the distinct themes.
+  final String spotlightTheme = spotlightThemeFor(DateTime.now());
 
   @override
   void initState() {
@@ -81,30 +83,6 @@ class _HomePageState extends State<HomePage>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _loadSpotlightTheme();
-  }
-
-  Future<void> _loadSpotlightTheme() async {
-    // Get all stories and extract unique themes
-    List<Map<String, dynamic>> storiesData =
-        await FirebaseService.getAllStories();
-    Set<String> themesSet = {};
-    for (var story in storiesData) {
-      if (story.containsKey('themes')) {
-        for (var t in story['themes']) {
-          themesSet.add(t.toString());
-        }
-      }
-    }
-    List<String> themes = themesSet.toList();
-    print(themes); // Debugging line to check themes
-    if (themes.isNotEmpty) {
-      // Rotate through themes by day (using day-of-month as index)
-      int index = DateTime.now().day % themes.length;
-      setState(() {
-        spotlightTheme = themes[index];
-      });
-    }
   }
 
   @override
@@ -188,12 +166,7 @@ class _HomePageState extends State<HomePage>
                       SpotlightPanel(spotlightTheme: spotlightTheme),
 
                       SizedBox(height: 40),
-                      // Display revolving dashboard only if spotlightTheme is loaded
-                      spotlightTheme == null
-                          ? CircularProgressIndicator()
-                          : RevolvingStoriesDashboard(
-                            spotlightTheme: spotlightTheme!,
-                          ),
+                      RevolvingStoriesDashboard(spotlightTheme: spotlightTheme),
                       SizedBox(height: 40),
                       // New separator between the revolving dashboard and the world map
                       Container(

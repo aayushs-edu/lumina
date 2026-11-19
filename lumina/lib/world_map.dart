@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lumina/services/firebase_service.dart';
@@ -19,7 +20,28 @@ class Region {
   final String path;
   final Color color;
 
-  Region({required this.id, required this.path, required this.color});
+  /// The SVG path parsed once, in the SVG's own coordinate space.
+  final Path parsedPath;
+
+  /// Bounds of [parsedPath], used as a cheap prefilter for hit-testing.
+  final Rect bounds;
+
+  /// Size of the coordinate space used by `assets/world.svg`.
+  static const svgWidth = 2000.0;
+  static const svgHeight = 1001.0;
+
+  Region._(this.id, this.path, this.color, this.parsedPath)
+    : bounds = parsedPath.getBounds();
+
+  factory Region({
+    required String id,
+    required String path,
+    required Color color,
+  }) => Region._(id, path, color, parseSvgPathData(path));
+
+  /// Scale that fits the SVG into [size], anchored at the top-left.
+  static double scaleFor(Size size) =>
+      min(size.width / svgWidth, size.height / svgHeight);
 }
 
 // Add this CustomPainter class, ideally near the top of the file or in a separate file.
@@ -52,10 +74,14 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   late AnimationController _gradientController;
 
   // Tooltip state
-  bool _tooltipVisible = false;
-  String? _hoveredCountryId;
-  Offset _tooltipPosition = Offset.zero;
   OverlayEntry? _tooltipOverlay;
+
+  // Region currently under the mouse (null when over sea / outside the map).
+  // Drives the hover highlight and cursor without rebuilding the map.
+  final ValueNotifier<String?> _hoveredRegionId = ValueNotifier<String?>(null);
+
+  // Logical size the map is laid out at before FittedBox scales it.
+  static const Size _mapSize = Size(1000, 450);
 
   // Panel state
   String? _selectedCountry;
@@ -213,9 +239,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
 
     // Insert the overlay
     Overlay.of(context).insert(_tooltipOverlay!);
-    _tooltipVisible = true;
-    _hoveredCountryId = countryId;
-    _tooltipPosition = position;
   }
 
   // Hide tooltip
@@ -223,21 +246,88 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
     if (_tooltipOverlay != null) {
       _tooltipOverlay!.remove();
       _tooltipOverlay = null;
-      _tooltipVisible = false;
-      _hoveredCountryId = null;
     }
   }
 
-  // Update tooltip position on mouse move
-  void _updateTooltipPosition(Offset position) {
-    if (_tooltipVisible && _tooltipPosition != position) {
-      _tooltipPosition = position;
-      // Only recreate tooltip if it's significantly moved
-      if ((position - _tooltipPosition).distance > 5) {
-        _hideTooltip();
-        _showTooltip(context, position, _hoveredCountryId!);
+  /// Topmost region containing [localPosition] (in [_mapSize] coordinates).
+  /// Later regions paint on top, so search back to front.
+  Region? _regionAt(Offset localPosition) {
+    final svgPoint = localPosition / Region.scaleFor(_mapSize);
+    for (var i = _regions.length - 1; i >= 0; i--) {
+      final region = _regions[i];
+      if (region.bounds.contains(svgPoint) &&
+          region.parsedPath.contains(svgPoint)) {
+        return region;
       }
     }
+    return null;
+  }
+
+  void _handleHover(PointerEvent event) {
+    final regionId = _regionAt(event.localPosition)?.id;
+    if (regionId == _hoveredRegionId.value) return;
+    _hoveredRegionId.value = regionId;
+    if (regionId == null) {
+      _hideTooltip();
+    } else {
+      _showTooltip(context, event.position, regionId);
+    }
+  }
+
+  void _handleExit(PointerExitEvent event) {
+    _hoveredRegionId.value = null;
+    _hideTooltip();
+  }
+
+  Widget _buildMap() {
+    final map = SizedBox.fromSize(
+      size: _mapSize,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // All country fills in one picture; only repaints if regions change.
+          RepaintBoundary(
+            child: CustomPaint(
+              painter: _WorldMapPainter(_regions),
+              isComplex: true,
+            ),
+          ),
+          // Hover highlight in its own layer so hovering never repaints the map.
+          RepaintBoundary(
+            child: CustomPaint(
+              painter: _HoveredRegionPainter(
+                regions: _regions,
+                hoveredId: _hoveredRegionId,
+                color: Theme.of(context).hoverColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return ValueListenableBuilder<String?>(
+      valueListenable: _hoveredRegionId,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapUp: (details) {
+          final region = _regionAt(details.localPosition);
+          if (region != null) _showCountryDetails(region.id);
+        },
+        child: map,
+      ),
+      builder:
+          (context, hoveredId, child) => MouseRegion(
+            cursor:
+                hoveredId != null
+                    ? SystemMouseCursors.click
+                    : MouseCursor.defer,
+            onEnter: _handleHover,
+            onHover: _handleHover,
+            onExit: _handleExit,
+            child: child,
+          ),
+    );
   }
 
   void _updateSelectedCountry(String countryName) async {
@@ -271,6 +361,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   @override
   void dispose() {
     _hideTooltip();
+    _hoveredRegionId.dispose();
     _gradientController.dispose();
     super.dispose();
   }
@@ -425,15 +516,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
                                   : Center(
                                       child: FittedBox(
                                         fit: BoxFit.contain,
-                                        child: SizedBox(
-                                          width: 1000,
-                                          height: 450,
-                                          child: Stack(
-                                            children: _regions
-                                                .map((region) => _getRegionImage(region))
-                                                .toList(),
-                                          ),
-                                        ),
+                                        child: _buildMap(),
                                       ),
                                     ),
                             ],
@@ -535,50 +618,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
       case HotspotLevel.none:
         return "No Data";
     }
-  }
-
-  Widget _getRegionImage(Region region) {
-    return ClipPath(
-      clipper: RegionClipper(path: region.path),
-      child: MouseRegion(
-        onEnter: (event) {
-          // Show tooltip when mouse enters a region
-          _showTooltip(context, event.position, region.id);
-        },
-        onHover: (event) {
-          // Update tooltip when mouse moves within the same region
-          if (_hoveredCountryId == region.id) {
-            _updateTooltipPosition(event.position);
-          } else {
-            // Show new tooltip if mouse moved to a different country
-            _showTooltip(context, event.position, region.id);
-          }
-        },
-        onExit: (event) {
-          // Hide tooltip when mouse exits a region
-          _hideTooltip();
-        },
-        child: Container(
-          color: region.color,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                _showCountryDetails(region.id);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.3),
-                    width: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _showCountryDetails(String countryId) {
@@ -975,25 +1014,59 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap>
   }
 }
 
-class RegionClipper extends CustomClipper<Path> {
-  final String path;
-  static const originalWidth = 2000.0;
-  static const originalHeight = 1001.0;
+class _WorldMapPainter extends CustomPainter {
+  _WorldMapPainter(this.regions);
 
-  RegionClipper({super.reclip, required this.path});
+  final List<Region> regions;
 
   @override
-  Path getClip(Size size) {
-    final pathData = parseSvgPathData(path);
-    final scaleX = size.width / originalWidth;
-    final scaleY = size.height / originalHeight;
-    final scale = min(scaleX, scaleY);
-    final matrix = Matrix4.identity()..scale(scale, scale);
-    return pathData.transform(matrix.storage);
+  void paint(Canvas canvas, Size size) {
+    final scale = Region.scaleFor(size);
+    canvas.save();
+    canvas.scale(scale, scale);
+    final paint = Paint()..style = PaintingStyle.fill;
+    for (final region in regions) {
+      paint.color = region.color;
+      canvas.drawPath(region.parsedPath, paint);
+    }
+    canvas.restore();
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
-    return false;
+  bool shouldRepaint(_WorldMapPainter oldDelegate) =>
+      !identical(oldDelegate.regions, regions);
+}
+
+/// Tints every path of the hovered country, like the old per-country InkWell
+/// hover highlight. Repaints itself when [hoveredId] changes.
+class _HoveredRegionPainter extends CustomPainter {
+  _HoveredRegionPainter({
+    required this.regions,
+    required this.hoveredId,
+    required this.color,
+  }) : super(repaint: hoveredId);
+
+  final List<Region> regions;
+  final ValueListenable<String?> hoveredId;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final id = hoveredId.value;
+    if (id == null) return;
+    final scale = Region.scaleFor(size);
+    canvas.save();
+    canvas.scale(scale, scale);
+    final paint = Paint()..color = color;
+    for (final region in regions) {
+      if (region.id == id) canvas.drawPath(region.parsedPath, paint);
+    }
+    canvas.restore();
   }
+
+  @override
+  bool shouldRepaint(_HoveredRegionPainter oldDelegate) =>
+      !identical(oldDelegate.regions, regions) ||
+      oldDelegate.hoveredId != hoveredId ||
+      oldDelegate.color != color;
 }
