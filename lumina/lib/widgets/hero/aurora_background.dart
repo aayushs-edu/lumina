@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -52,6 +51,16 @@ class _AuroraBackgroundState extends HeroTickerState<AuroraBackground> {
   final DriftingLight _light = DriftingLight(followRate: 3.5);
   Size _size = Size.zero;
   ui.Image? _grain;
+
+  // The aurora is all soft light, so it is rendered off-screen at a fraction
+  // of the hero's size and stretched to fit. That is a few hundred thousand
+  // pixels per update instead of ~70 overlapping full-screen layers at full
+  // device resolution, which kept the hero well under 60 fps.
+  static const double _sceneScale = 0.33;
+  static const double _sceneInterval = 1 / 60; // seconds between re-renders
+  ui.Image? _scene;
+  ui.Image? _previousScene; // freed one update later, once nothing draws it
+  double _sinceScene = double.infinity;
 
   static const blobs = [
     _Blob(Color(0xFFFFB38A), 0.22, 0.30, 0.10, 0.08, 0.050, 0.070, 0.0, 0.55),
@@ -109,11 +118,45 @@ class _AuroraBackgroundState extends HeroTickerState<AuroraBackground> {
   void onTick(double dt) {
     if (_size.isEmpty) return;
     _light.update(_size, dt, widget.pointer.value, motion: motion);
+    _sinceScene += dt;
+    if (_sinceScene >= _sceneInterval || !_sceneFits()) _renderScene();
+  }
+
+  bool _sceneFits() {
+    final scene = _scene;
+    return scene != null &&
+        scene.width == _sceneWidth &&
+        scene.height == _sceneHeight;
+  }
+
+  int get _sceneWidth => math.max(1, (_size.width * _sceneScale).ceil());
+  int get _sceneHeight => math.max(1, (_size.height * _sceneScale).ceil());
+
+  void _renderScene() {
+    _sinceScene = 0;
+    final w = _sceneWidth, h = _sceneHeight;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.scale(w / _size.width, h / _size.height);
+    _paintAurora(
+      canvas,
+      _size,
+      elapsed,
+      _light.position ?? _size.center(Offset.zero),
+    );
+    final picture = recorder.endRecording();
+    final image = picture.toImageSync(w, h);
+    picture.dispose();
+    _previousScene?.dispose();
+    _previousScene = _scene;
+    _scene = image;
   }
 
   @override
   void dispose() {
     _grain?.dispose();
+    _scene?.dispose();
+    _previousScene?.dispose();
     super.dispose();
   }
 
@@ -135,24 +178,90 @@ class _AuroraPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final t = state.elapsed;
-    final light = state._light.position ?? size.center(Offset.zero);
-    // Parallax: everything leans a little toward the light.
-    final lean = Offset(
-      (light.dx / size.width - 0.5) * size.width * 0.04,
-      (light.dy / size.height - 0.5) * size.height * 0.04,
-    );
+    final scene = state._scene;
+    if (scene != null) {
+      canvas.drawImageRect(
+        scene,
+        Rect.fromLTWH(0, 0, scene.width.toDouble(), scene.height.toDouble()),
+        rect,
+        Paint()..filterQuality = FilterQuality.high,
+      );
+    } else {
+      // First frame, before the ticker has rendered a scene.
+      _paintAurora(
+        canvas,
+        size,
+        state.elapsed,
+        state._light.position ?? size.center(Offset.zero),
+      );
+    }
 
+    // Fine grain for a printed, tactile finish.
+    final grain = state._grain;
+    if (grain != null) {
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = ImageShader(
+            grain,
+            TileMode.repeated,
+            TileMode.repeated,
+            Matrix4.identity().storage,
+          )
+          ..color = const Color.fromRGBO(0, 0, 0, 0.05)
+          ..blendMode = BlendMode.multiply,
+      );
+    }
+
+    // Ease the bottom 40% into the page's white so the hero has no edge.
+    final fadeRect = Rect.fromLTWH(
+      0,
+      size.height * 0.6,
+      size.width,
+      size.height * 0.4 + 1,
+    );
     canvas.drawRect(
-      rect,
+      fadeRect,
       Paint()
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFF1E6), Color(0xFFFFF7F1), Color(0xFFFFFFFF)],
-          stops: [0.0, 0.6, 1.0],
-        ).createShader(rect),
+          colors: [
+            Color(0x00FFFFFF),
+            Color(0x1FFFFFFF),
+            Color(0x73FFFFFF),
+            Color(0xD9FFFFFF),
+            Color(0xFFFFFFFF),
+          ],
+          stops: [0.0, 0.25, 0.55, 0.82, 1.0],
+        ).createShader(fadeRect),
     );
+  }
+
+  @override
+  bool shouldRepaint(covariant _AuroraPainter old) => old.state != state;
+}
+
+/// Background, pools of colour, silk ribbons and the light's highlight.
+/// Drawn into the low-resolution scene image.
+void _paintAurora(Canvas canvas, Size size, double t, Offset light) {
+  final rect = Offset.zero & size;
+  // Parallax: everything leans a little toward the light.
+  final lean = Offset(
+    (light.dx / size.width - 0.5) * size.width * 0.04,
+    (light.dy / size.height - 0.5) * size.height * 0.04,
+  );
+
+  canvas.drawRect(
+    rect,
+    Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFFFFF1E6), Color(0xFFFFF7F1), Color(0xFFFFFFFF)],
+        stops: [0.0, 0.6, 1.0],
+      ).createShader(rect),
+  );
 
     // Pools of colour.
     final span = math.max(size.width, size.height);
@@ -224,49 +333,4 @@ class _AuroraPainter extends CustomPainter {
           colors: [Color(0x66FFFFFF), Color(0x00FFFFFF)],
         ).createShader(Rect.fromCircle(center: light, radius: 320)),
     );
-
-    // Fine grain for a printed, tactile finish.
-    final grain = state._grain;
-    if (grain != null) {
-      canvas.drawRect(
-        rect,
-        Paint()
-          ..shader = ImageShader(
-            grain,
-            TileMode.repeated,
-            TileMode.repeated,
-            Matrix4.identity().storage,
-          )
-          ..color = const Color.fromRGBO(0, 0, 0, 0.05)
-          ..blendMode = BlendMode.multiply,
-      );
-    }
-
-    // Ease the bottom 40% into the page's white so the hero has no edge.
-    final fadeRect = Rect.fromLTWH(
-      0,
-      size.height * 0.6,
-      size.width,
-      size.height * 0.4 + 1,
-    );
-    canvas.drawRect(
-      fadeRect,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0x00FFFFFF),
-            Color(0x1FFFFFFF),
-            Color(0x73FFFFFF),
-            Color(0xD9FFFFFF),
-            Color(0xFFFFFFFF),
-          ],
-          stops: [0.0, 0.25, 0.55, 0.82, 1.0],
-        ).createShader(fadeRect),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _AuroraPainter old) => old.state != state;
 }

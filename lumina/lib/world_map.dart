@@ -186,7 +186,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                     ),
                     SizedBox(height: 8),
                     FutureBuilder<List<MapEntry<String, int>>>(
-                      future: FirebaseService.getPrevalentThemesForCountry(countryName),
+                      future: _themesFor(countryName),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return Text(
@@ -240,6 +240,23 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
       _tooltipOverlay!.remove();
       _tooltipOverlay = null;
     }
+  }
+
+  // One Firestore query per country per session, shared by the hover tooltip
+  // and the details dialog, instead of a new query on every hover.
+  static final Map<String, Future<List<MapEntry<String, int>>>> _themesCache =
+      {};
+
+  Future<List<MapEntry<String, int>>> _themesFor(String country) {
+    return _themesCache.putIfAbsent(country, () {
+      final future = FirebaseService.getPrevalentThemesForCountry(country);
+      // Let a failed lookup be retried on the next hover.
+      future.catchError((Object _) {
+        _themesCache.remove(country);
+        return <MapEntry<String, int>>[];
+      });
+      return future;
+    });
   }
 
   /// Topmost region containing [localPosition] (in [_mapSize] coordinates).
@@ -779,7 +796,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                   ),
                   SizedBox(height: 16),
                   FutureBuilder<List<MapEntry<String, int>>>(
-                    future: FirebaseService.getPrevalentThemesForCountry(countryName),
+                    future: _themesFor(countryName),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
