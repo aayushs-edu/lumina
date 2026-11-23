@@ -101,14 +101,26 @@ class _SpotlightStoriesSectionState extends State<SpotlightStoriesSection> {
             children: [spotlight, stories],
           );
         }
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(width: (width * 0.4).clamp(360.0, 600.0), child: spotlight),
-              Expanded(child: stories),
-            ],
-          ),
+        // The orange field is a positioned background so it always runs the
+        // full height of the stories column.
+        final fieldWidth = (width * 0.4).clamp(360.0, 600.0);
+        return Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: fieldWidth,
+              child: const ColoredBox(color: HomePalette.orange),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: fieldWidth, child: spotlight),
+                Expanded(child: stories),
+              ],
+            ),
+          ],
         );
       },
     );
@@ -138,7 +150,6 @@ class _SpotlightField extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +180,7 @@ class _SpotlightField extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: wide ? 56 : 32),
+          SizedBox(height: wide ? 40 : 32),
           _SquareButton(
             label: 'View Stories',
             background: HomePalette.ink,

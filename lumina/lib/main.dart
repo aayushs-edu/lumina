@@ -78,7 +78,11 @@ class _HomePageState extends State<HomePage> {
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: LuminaNavbar(currentPage: 'home'),
       ),
-      body: Stack(
+      // Tab order follows the page's reading order (spotlight, stories,
+      // then the closing invitation) rather than on-screen geometry.
+      body: FocusTraversalGroup(
+        policy: WidgetOrderTraversalPolicy(),
+        child: Stack(
         children: [
           Column(
             children: [
@@ -117,12 +121,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      ),
     );
   }
 }
 
-
-/// The Inequality Atlas on a white ground, framed square.
+/// The Inequality Atlas on a warm-white ground, framed square.
 class _AtlasSection extends StatelessWidget {
   const _AtlasSection();
 

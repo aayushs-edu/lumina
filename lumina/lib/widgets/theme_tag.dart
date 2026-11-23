@@ -37,6 +37,24 @@ class ThemeTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Square tags belong to the home page's palette: ink on warm cream.
+    if (square) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF1E6),
+          border: Border.all(color: const Color(0xFFEADBD2)),
+        ),
+        child: Text(
+          theme,
+          style: const TextStyle(
+            color: Color(0xFF2A1A16),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

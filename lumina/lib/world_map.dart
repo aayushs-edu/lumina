@@ -43,13 +43,22 @@ class Region {
 
   /// Union of every region's bounds: the map's actual extent, so it can be
   /// scaled to fill its frame rather than the SVG's padded canvas.
+  /// Tiny outlying islands are left out so they don't letterbox the land;
+  /// the frame clips anything that lands past its edge.
   static Rect contentBounds(List<Region> regions) {
     if (regions.isEmpty) return Rect.zero;
-    var r = regions.first.bounds;
+    var full = regions.first.bounds;
     for (final region in regions.skip(1)) {
-      r = r.expandToInclude(region.bounds);
+      full = full.expandToInclude(region.bounds);
     }
-    return r;
+    final minArea = full.width * full.height * 0.0003;
+    Rect? land;
+    for (final region in regions) {
+      final b = region.bounds;
+      if (b.width * b.height < minArea) continue;
+      land = land == null ? b : land.expandToInclude(b);
+    }
+    return land ?? full;
   }
 }
 
@@ -363,7 +372,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
   }
 
   Future<List<Region>> loadRegions() async {
-    print('Starting to load regions...'); // Progress print
     // Load the SVG file
     final String svgString = await rootBundle.loadString('assets/world.svg');
     final document = XmlDocument.parse(svgString);
@@ -459,9 +467,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
       }
     }
 
-    print(
-      'Finished loading regions. Total regions: ${regions.length}',
-    ); // Progress print
     return regions;
   }
 
@@ -548,11 +553,12 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
             ],
             const SizedBox(height: 28),
             Container(
+              clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(
                 color: const Color(0xFFFFFCFA),
                 border: Border.all(color: _rule),
               ),
-              padding: EdgeInsets.all(wide ? 32 : 12),
+              padding: EdgeInsets.all(wide ? 32 : 8),
               child:
                   _regions.isEmpty
                       ? SizedBox(
