@@ -6,160 +6,172 @@ class LuminaNavbar extends StatelessWidget {
 
   const LuminaNavbar({Key? key, this.currentPage = ''}) : super(key: key);
 
+  static const _orange = Color(0xFFFF6600);
+  static const _ink = Color(0xFF2A1A16);
+  static const _rule = Color(0xFFEADBD2);
+
+  void _go(BuildContext context, String page, String route) {
+    if (currentPage != page) Navigator.pushReplacementNamed(context, route);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final narrow = MediaQuery.sizeOf(context).width < 640;
+
+    final links = Container(
+      padding: EdgeInsets.symmetric(horizontal: narrow ? 4 : 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: _rule),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _NavLink(
+            label: 'Explore',
+            active: currentPage == 'explore',
+            compact: narrow,
+            onTap: () => _go(context, 'explore', '/explore'),
+          ),
+          _NavLink(
+            label: 'Post a Story',
+            active: currentPage == 'postStory',
+            compact: narrow,
+            onTap: () => _go(context, 'postStory', '/postStory'),
+          ),
+          _NavLink(
+            label: 'LuminaLens',
+            active: currentPage == 'luminaLens',
+            compact: narrow,
+            onTap: () => _go(context, 'luminaLens', '/luminaLens'),
+          ),
+        ],
+      ),
+    );
+
+    final wordmark = _NavLink(
+      label: 'lumina',
+      wordmark: true,
+      active: false,
+      compact: narrow,
+      onTap: () => _go(context, 'home', '/'),
+    );
+
     return PreferredSize(
-      preferredSize: Size.fromHeight(60),
+      preferredSize: const Size.fromHeight(60),
       child: AppBar(
         toolbarHeight: 80,
-        backgroundColor: Colors.transparent,
+        // Transparent over the hero; a warm-white bar once content scrolls
+        // underneath, so the wordmark and links never sit on busy content.
+        backgroundColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.scrolledUnder)
+                  ? const Color(0xF2FFFCFA)
+                  : Colors.transparent,
+        ),
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         automaticallyImplyLeading: false,
-        // Remove the default leading so we can include "lumina" in a Stack.
-        title: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Centered navigation pane
-            Center(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.black12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
+        titleSpacing: narrow ? 12 : 16,
+        title:
+            narrow
+                ? Row(children: [wordmark, const Spacer(), links])
+                : Stack(
+                  alignment: Alignment.center,
                   children: [
-                    // Explore with icon
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.auto_awesome,
-                          size: 16,
-                          color:
-                              currentPage == 'explore'
-                                  ? const Color.fromARGB(255, 255, 102, 0)
-                                  : Colors.black54,
-                        ),
-                        SizedBox(width: 4),
-                        TextButton(
-                          onPressed: () {
-                            if (currentPage != 'explore') {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/explore',
-                              );
-                            }
-                          },
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Text(
-                            "Explore",
-                            style: TextStyle(
-                              color:
-                                  currentPage == 'explore'
-                                      ? const Color.fromARGB(255, 255, 102, 0)
-                                      : Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(width: 16),
-                    // Post a Story
-                    TextButton(
-                      onPressed: () {
-                        if (currentPage != 'postStory') {
-                          Navigator.pushReplacementNamed(context, '/postStory');
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                      ),
-                      child: Text(
-                        "Post a Story",
-                        style: TextStyle(
-                          color:
-                              currentPage == 'postStory'
-                                  ? const Color.fromARGB(255, 255, 102, 0)
-                                  : Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    // Policy Maker
-                    TextButton(
-                      onPressed: () {
-                        if (currentPage != 'luminaLens') {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/luminaLens',
-                          );
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                      ),
-                      child: Text(
-                        "LuminaLens",
-                        style: TextStyle(
-                          color:
-                              currentPage == 'luminaLens'
-                                  ? const Color.fromARGB(255, 255, 102, 0)
-                                  : Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
+                    Center(child: links),
+                    Align(alignment: Alignment.centerLeft, child: wordmark),
                   ],
                 ),
+      ),
+    );
+  }
+}
+
+class _NavLink extends StatefulWidget {
+  const _NavLink({
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.icon,
+    this.compact = false,
+    this.wordmark = false,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final IconData? icon;
+  final bool compact;
+  final bool wordmark;
+
+  @override
+  State<_NavLink> createState() => _NavLinkState();
+}
+
+class _NavLinkState extends State<_NavLink> {
+  bool _hover = false;
+  bool _focus = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        widget.wordmark || widget.active || _hover
+            ? LuminaNavbar._orange
+            : LuminaNavbar._ink;
+    return FocusableActionDetector(
+      mouseCursor: SystemMouseCursors.click,
+      onShowHoverHighlight: (v) => setState(() => _hover = v),
+      onShowFocusHighlight: (v) => setState(() => _focus = v),
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onTap();
+            return null;
+          },
+        ),
+      },
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.wordmark ? 4 : (widget.compact ? 8 : 14),
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color:
+                    widget.active
+                        ? LuminaNavbar._orange
+                        : (_focus ? LuminaNavbar._ink : Colors.transparent),
+                width: 2,
               ),
             ),
-            // Positioned lumina button on the left
-            Positioned(
-              left: 16,
-              child: TextButton(
-                onPressed: () {
-                  if (currentPage != 'home') {
-                    Navigator.pushReplacementNamed(context, '/');
-                  }
-                },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  alignment: Alignment.center,
-                  minimumSize: Size(80, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  overlayColor: Colors.transparent,
-                ),
-                child: Text(
-                  "lumina",
-                  style: GoogleFonts.baloo2(
-                    color: const Color.fromARGB(255, 255, 102, 0),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(widget.icon, size: 15, color: color),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                widget.label,
+                style: GoogleFonts.baloo2(
+                  fontSize:
+                      widget.wordmark
+                          ? (widget.compact ? 20 : 22)
+                          : (widget.compact ? 14 : 15),
+                  fontWeight:
+                      widget.wordmark ? FontWeight.w800 : FontWeight.w600,
+                  color: color,
+                  height: 1.2,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

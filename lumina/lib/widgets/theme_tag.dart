@@ -4,10 +4,14 @@ class ThemeTag extends StatelessWidget {
   final String theme;
   final String? currentSpotlight; // Pass the current spotlight theme
 
+  /// Square corners, for pages whose design has no rounded corners.
+  final bool square;
+
   const ThemeTag({
     Key? key,
     required this.theme,
     this.currentSpotlight,
+    this.square = false,
   }) : super(key: key);
 
   // Helper function to decide if this tag is the spotlight theme.
@@ -45,7 +49,7 @@ class ThemeTag extends StatelessWidget {
               )
             : null,
         color: isSpotlight ? null : getColor(theme),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: square ? null : BorderRadius.circular(12),
       ),
       child: Text(
         theme,

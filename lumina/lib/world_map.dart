@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lumina/services/firebase_service.dart';
 import 'package:lumina/widgets/waving_leaf.dart';
 import 'package:path_drawing/path_drawing.dart';
@@ -11,6 +12,11 @@ import 'package:lumina/models/gender_inequality_data.dart';
 import 'package:lumina/widgets/theme_tag.dart';
 
 class InteractiveWorldMap extends StatefulWidget {
+  const InteractiveWorldMap({super.key, this.header});
+
+  /// Optional heading shown beside the legend, above the map.
+  final Widget? header;
+
   @override
   _InteractiveWorldMapState createState() => _InteractiveWorldMapState();
 }
@@ -26,10 +32,6 @@ class Region {
   /// Bounds of [parsedPath], used as a cheap prefilter for hit-testing.
   final Rect bounds;
 
-  /// Size of the coordinate space used by `assets/world.svg`.
-  static const svgWidth = 2000.0;
-  static const svgHeight = 1001.0;
-
   Region._(this.id, this.path, this.color, this.parsedPath)
     : bounds = parsedPath.getBounds();
 
@@ -39,32 +41,16 @@ class Region {
     required Color color,
   }) => Region._(id, path, color, parseSvgPathData(path));
 
-  /// Scale that fits the SVG into [size], anchored at the top-left.
-  static double scaleFor(Size size) =>
-      min(size.width / svgWidth, size.height / svgHeight);
-}
-
-// Add this CustomPainter class, ideally near the top of the file or in a separate file.
-class GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
-      ..strokeWidth = 1;
-    final double spacing = 50; // Adjust this value for grid spacing
-
-    // Draw vertical lines
-    for (double x = 0; x <= size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+  /// Union of every region's bounds: the map's actual extent, so it can be
+  /// scaled to fill its frame rather than the SVG's padded canvas.
+  static Rect contentBounds(List<Region> regions) {
+    if (regions.isEmpty) return Rect.zero;
+    var r = regions.first.bounds;
+    for (final region in regions.skip(1)) {
+      r = r.expandToInclude(region.bounds);
     }
-    // Draw horizontal lines
-    for (double y = 0; y <= size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+    return r;
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
@@ -78,8 +64,10 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
   // Drives the hover highlight and cursor without rebuilding the map.
   final ValueNotifier<String?> _hoveredRegionId = ValueNotifier<String?>(null);
 
-  // Logical size the map is laid out at before FittedBox scales it.
-  static const Size _mapSize = Size(1000, 450);
+  // Extent of all country paths, and the size the map was last laid out at;
+  // together they map pointer positions back into SVG coordinates.
+  Rect _mapBounds = Rect.zero;
+  Size _mapLayoutSize = Size.zero;
 
   // Panel state
   String? _selectedCountry;
@@ -110,6 +98,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
       loadRegions().then((regionsData) {
         setState(() {
           _regions = regionsData;
+          _mapBounds = Region.contentBounds(regionsData);
           // Ensure the overlay is initialized if regions are present
           if (_regions.isNotEmpty) {
             // Trigger rebuild if necessary
@@ -150,80 +139,86 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
           (context) => Positioned(
             left: position.dx + 10, // Offset to prevent cursor overlap
             top: position.dy + 10,
-            child: Material(
-              elevation: 4.0,
-              borderRadius: BorderRadius.circular(8),
+            child: IgnorePointer(
               child: Container(
-                padding: EdgeInsets.all(12),
-                constraints: BoxConstraints(maxWidth: 200),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                constraints: const BoxConstraints(maxWidth: 240),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      countryName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'GII Score: ${giiData.genderInequalityIndex.toStringAsFixed(3)}',
-                      style: TextStyle(color: Colors.black87, fontSize: 12),
-                    ),
-                    Text(
-                      'Level: ${_getLevelName(giiData.hotspotLevel)}',
-                      style: TextStyle(
-                        color: _hotspotColors[giiData.hotspotLevel],
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    FutureBuilder<List<MapEntry<String, int>>>(
-                      future: _themesFor(countryName),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Text(
-                            "Loading themes...",
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          );
-                        }
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Text(
-                            "No themes available.",
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          );
-                        }
-                        final themes = snapshot.data!;
-                        return Wrap(
-                          spacing: 5, // increased horizontal spacing
-                          runSpacing: 2, // added vertical spacing in case of wrapping
-                          children: themes.take(2).map((entry) {
-                            return Padding(
-                              padding: const EdgeInsets.all(4), // extra padding around each theme element
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ThemeTag(theme: entry.key),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "(${entry.value})",
-                                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      },
+                  border: Border.all(color: _rule),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1F2A1A16),
+                      blurRadius: 18,
+                      offset: Offset(0, 6),
                     ),
                   ],
+                ),
+                child: DefaultTextStyle(
+                  style: GoogleFonts.baloo2(fontSize: 13, color: _soft),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        countryName,
+                        style: GoogleFonts.baloo2(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                          color: _ink,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'GII Score: ${giiData.genderInequalityIndex.toStringAsFixed(3)}',
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _swatch(giiData.hotspotLevel, 9),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Level: ${_getLevelName(giiData.hotspotLevel)}',
+                            style: GoogleFonts.baloo2(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _ink,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      FutureBuilder<List<MapEntry<String, int>>>(
+                        future: _themesFor(countryName),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Text("Loading themes...");
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Text("No themes available.");
+                          }
+                          final themes = snapshot.data!;
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children:
+                                themes.take(2).map((entry) {
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ThemeTag(theme: entry.key, square: true),
+                                      const SizedBox(width: 4),
+                                      Text("(${entry.value})"),
+                                    ],
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -259,10 +254,12 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
     });
   }
 
-  /// Topmost region containing [localPosition] (in [_mapSize] coordinates).
+  /// Topmost region containing [localPosition] (in the map's layout box).
   /// Later regions paint on top, so search back to front.
   Region? _regionAt(Offset localPosition) {
-    final svgPoint = localPosition / Region.scaleFor(_mapSize);
+    if (_mapBounds.isEmpty || _mapLayoutSize.isEmpty) return null;
+    final scale = _mapLayoutSize.width / _mapBounds.width;
+    final svgPoint = localPosition / scale + _mapBounds.topLeft;
     for (var i = _regions.length - 1; i >= 0; i--) {
       final region = _regions[i];
       if (region.bounds.contains(svgPoint) &&
@@ -290,29 +287,37 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
   }
 
   Widget _buildMap() {
-    final map = SizedBox.fromSize(
-      size: _mapSize,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // All country fills in one picture; only repaints if regions change.
-          RepaintBoundary(
-            child: CustomPaint(
-              painter: _WorldMapPainter(_regions),
-              isComplex: true,
-            ),
-          ),
-          // Hover highlight in its own layer so hovering never repaints the map.
-          RepaintBoundary(
-            child: CustomPaint(
-              painter: _HoveredRegionPainter(
-                regions: _regions,
-                hoveredId: _hoveredRegionId,
-                color: Theme.of(context).hoverColor,
+    final map = AspectRatio(
+      aspectRatio: _mapBounds.width / _mapBounds.height,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          _mapLayoutSize = constraints.biggest;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // All country fills in one picture; only repaints if regions
+              // change.
+              RepaintBoundary(
+                child: CustomPaint(
+                  painter: _WorldMapPainter(_regions, _mapBounds),
+                  isComplex: true,
+                ),
               ),
-            ),
-          ),
-        ],
+              // Hover highlight in its own layer so hovering never repaints
+              // the map.
+              RepaintBoundary(
+                child: CustomPaint(
+                  painter: _HoveredRegionPainter(
+                    regions: _regions,
+                    bounds: _mapBounds,
+                    hoveredId: _hoveredRegionId,
+                    color: const Color(0x142A1A16),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -348,24 +353,6 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
       _selectedCountry = countryName;
       _selectedCountryData = giiData;
     });
-  }
-
-  Widget _buildCountryInfoPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Hotspots',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        SizedBox(height: 12),
-        ..._getLegendItems(),
-      ],
-    );
   }
 
   @override
@@ -478,140 +465,120 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
     return regions;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
+  static const _ink = Color(0xFF2A1A16);
+  static const _soft = Color(0xFF5B4740);
+  static const _rule = Color(0xFFEADBD2);
+
+  Widget _swatch(HotspotLevel level, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: _hotspotColors[level],
+        border:
+            level == HotspotLevel.none ? Border.all(color: _rule) : null,
+      ),
+    );
+  }
+
+  Widget _buildLegend() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        Text(
+          'Hotspots',
+          style: GoogleFonts.baloo2(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: _ink,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 20,
+          runSpacing: 6,
           children: [
-            SizedBox(height: 24),
-            Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
-                child: Container(
-                  height: 500,
-                  child: Stack(
-                    children: [
-                      // Map container covers the full area
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                spreadRadius: 0,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          padding: EdgeInsets.all(16),
-                          child: Stack(
-                            children: [
-                              // Faint Grid background
-                              CustomPaint(
-                                painter: GridPainter(),
-                                size: Size.infinite,
-                              ),
-                              _regions.isEmpty
-                                  ? Center(child: CircularProgressIndicator())
-                                  : Center(
-                                      child: FittedBox(
-                                        fit: BoxFit.contain,
-                                        child: _buildMap(),
-                                      ),
-                                    ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Overlaid Country Info Panel on the right
-                      Positioned(
-                        top: 16,
-                        bottom: 16,
-                        right: 16,
-                        width: 180,
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.3),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color.fromARGB(255, 128, 0, 128).withOpacity(0.1),
-                                blurRadius: 8,
-                                spreadRadius: 0,
-                                offset: Offset(0, 0),
-                              ),
-                            ],
-                          ),
-                          child: _buildCountryInfoPanel(),
-                        ),
-                      ),
-                      // Add the tip at the bottom left
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        child: Text(
-                          "Click on a country to see valuable data!",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
+            for (final level in HotspotLevel.values)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _swatch(level, 12),
+                  const SizedBox(width: 8),
+                  Text(
+                    _getLevelName(level),
+                    style: GoogleFonts.baloo2(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: _soft,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
           ],
         ),
       ],
     );
   }
 
-  List<Widget> _getLegendItems() {
-    return HotspotLevel.values.map((level) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: 12),
-        child: Row(
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final wide = width >= 900;
+        final header = widget.header;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (wide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (header != null) Expanded(child: header) else const Spacer(),
+                  const SizedBox(width: 32),
+                  _buildLegend(),
+                ],
+              )
+            else ...[
+              if (header != null) header,
+              const SizedBox(height: 20),
+              _buildLegend(),
+            ],
+            const SizedBox(height: 28),
             Container(
-              width: 8,
-              height: 8,
               decoration: BoxDecoration(
-                color: _hotspotColors[level],
-                shape: BoxShape.circle,
+                color: const Color(0xFFFFFCFA),
+                border: Border.all(color: _rule),
               ),
+              padding: EdgeInsets.all(wide ? 32 : 12),
+              child:
+                  _regions.isEmpty
+                      ? SizedBox(
+                        height: wide ? 480 : 180,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFFF6600),
+                            ),
+                          ),
+                        ),
+                      )
+                      : _buildMap(),
             ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _getLevelName(level),
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+            const SizedBox(height: 12),
+            Text(
+              "Click on a country to see valuable data!",
+              style: GoogleFonts.baloo2(fontSize: 15, color: _soft),
             ),
           ],
-        ),
-      );
-    }).toList();
+        );
+      },
+    );
   }
 
   String _getLevelName(HotspotLevel level) {
@@ -630,26 +597,24 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
   }
 
   void _showCountryDetails(String countryId) {
-    print('Attempting to show country details for: $countryId'); // Debug print
     final countryName = _getCountryNameFromIso(countryId);
-    print('Country name from ISO: $countryName'); // Debug print
     if (countryName == null) return;
 
     final giiData = GenderInequalityDataManager().getDataForCountry(countryName);
-    print('GII data found: ${giiData != null}'); // Debug print
     if (giiData == null) return;
 
     // Get the hotspot color for this country
     final Color hotspotColor = _hotspotColors[giiData.hotspotLevel] ?? Colors.grey[200]!;
 
     try {
-      print('Showing dialog'); // Debug print
       showDialog(
         context: context,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+        builder: (context) => DefaultTextStyle.merge(
+          style: GoogleFonts.baloo2(),
+          child: Dialog(
+          shape: const RoundedRectangleBorder(),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           child: Container(
             width: 500,
             padding: EdgeInsets.all(24),
@@ -667,11 +632,11 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: _ink,
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, color: Colors.black54),
+                        icon: Icon(Icons.close, color: _soft),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
@@ -679,28 +644,31 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                   SizedBox(height: 8),
                   // Hotspot level indicator
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: hotspotColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: hotspotColor,
-                        width: 1,
-                      ),
+                      border: Border.all(color: _rule),
                     ),
-                    child: Text(
-                      _getLevelName(giiData.hotspotLevel),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: hotspotColor,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _swatch(giiData.hotspotLevel, 10),
+                        const SizedBox(width: 8),
+                        Text(
+                          _getLevelName(giiData.hotspotLevel),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: _ink,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   SizedBox(height: 24),
                   // Main metrics in a row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
                     children: [
                       _buildMetricBox(
                         "GII Score",
@@ -720,7 +688,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                     ],
                   ),
                   SizedBox(height: 32),
-                  Divider(color: Colors.grey[300], thickness: 1),
+                  Divider(color: _rule, thickness: 1),
                   SizedBox(height: 24),
                   // Gender Inequality Metrics section
                   Text(
@@ -728,7 +696,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: _ink,
                     ),
                   ),
                   SizedBox(height: 16),
@@ -791,7 +759,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: _ink,
                     ),
                   ),
                   SizedBox(height: 16),
@@ -804,7 +772,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return Text(
                           "No themes available.",
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 14, color: _soft),
                         );
                       }
                       final themes = snapshot.data!;
@@ -815,11 +783,11 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                           return Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              ThemeTag(theme: entry.key),
+                              ThemeTag(theme: entry.key, square: true),
                               SizedBox(width: 4),
                               Text(
                                 "(${entry.value})",
-                                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                                style: TextStyle(fontSize: 12, color: _soft),
                               ),
                             ],
                           );
@@ -833,10 +801,9 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
             ),
           ),
         ),
+        ),
       );
-      print('Dialog shown successfully'); // Debug print
     } catch (e) {
-      print('Error showing dialog: $e'); // Debug print
     }
   }
 
@@ -847,16 +814,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            spreadRadius: 0,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: _rule, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -866,7 +824,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
+              color: _soft,
             ),
           ),
           SizedBox(height: 8),
@@ -875,7 +833,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: accentColor,
+              color: _ink,
             ),
             textAlign: TextAlign.center,
           ),
@@ -908,7 +866,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
           child: Icon(
             Icons.info_outline,
             size: 20,
-            color: accentColor,
+            color: _soft,
           ),
         ),
         SizedBox(width: 12),
@@ -921,7 +879,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
+                  color: _soft,
                 ),
               ),
               SizedBox(height: 4),
@@ -930,7 +888,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: _ink,
                 ),
               ),
             ],
@@ -945,9 +903,8 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!, width: 1),
+        color: const Color(0xFFFFFCFA),
+        border: Border.all(color: _rule, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -957,7 +914,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
+              color: _soft,
             ),
           ),
           SizedBox(height: 12),
@@ -966,7 +923,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
               Icon(
                 Icons.woman,
                 size: 20,
-                color: accentColor,
+                color: _soft,
               ),
               SizedBox(width: 8),
               Text(
@@ -974,7 +931,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: _ink,
                 ),
               ),
             ],
@@ -985,7 +942,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
               Icon(
                 Icons.man,
                 size: 20,
-                color: Colors.blue[700],
+                color: _soft,
               ),
               SizedBox(width: 8),
               Text(
@@ -993,7 +950,7 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: _ink,
                 ),
               ),
             ],
@@ -1024,15 +981,17 @@ class _InteractiveWorldMapState extends State<InteractiveWorldMap> {
 }
 
 class _WorldMapPainter extends CustomPainter {
-  _WorldMapPainter(this.regions);
+  _WorldMapPainter(this.regions, this.bounds);
 
   final List<Region> regions;
+  final Rect bounds;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final scale = Region.scaleFor(size);
+    final scale = size.width / bounds.width;
     canvas.save();
     canvas.scale(scale, scale);
+    canvas.translate(-bounds.left, -bounds.top);
     final paint = Paint()..style = PaintingStyle.fill;
     for (final region in regions) {
       paint.color = region.color;
@@ -1043,7 +1002,7 @@ class _WorldMapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_WorldMapPainter oldDelegate) =>
-      !identical(oldDelegate.regions, regions);
+      !identical(oldDelegate.regions, regions) || oldDelegate.bounds != bounds;
 }
 
 /// Tints every path of the hovered country, like the old per-country InkWell
@@ -1051,11 +1010,13 @@ class _WorldMapPainter extends CustomPainter {
 class _HoveredRegionPainter extends CustomPainter {
   _HoveredRegionPainter({
     required this.regions,
+    required this.bounds,
     required this.hoveredId,
     required this.color,
   }) : super(repaint: hoveredId);
 
   final List<Region> regions;
+  final Rect bounds;
   final ValueListenable<String?> hoveredId;
   final Color color;
 
@@ -1063,9 +1024,10 @@ class _HoveredRegionPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final id = hoveredId.value;
     if (id == null) return;
-    final scale = Region.scaleFor(size);
+    final scale = size.width / bounds.width;
     canvas.save();
     canvas.scale(scale, scale);
+    canvas.translate(-bounds.left, -bounds.top);
     final paint = Paint()..color = color;
     for (final region in regions) {
       if (region.id == id) canvas.drawPath(region.parsedPath, paint);
@@ -1076,6 +1038,7 @@ class _HoveredRegionPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HoveredRegionPainter oldDelegate) =>
       !identical(oldDelegate.regions, regions) ||
+      oldDelegate.bounds != bounds ||
       oldDelegate.hoveredId != hoveredId ||
       oldDelegate.color != color;
 }

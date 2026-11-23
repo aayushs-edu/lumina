@@ -265,7 +265,7 @@ class _LuminaHeroState extends State<LuminaHero> with TickerProviderStateMixin {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  "Today's spotlight",
+                                  "Today's Spotlight",
                                   style: GoogleFonts.baloo2(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -304,7 +304,6 @@ class _Eyebrow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
         color: Colors.white.withOpacity(0.55),
         border: Border.all(color: const Color(0xFFFF6600).withOpacity(0.18)),
       ),
@@ -314,11 +313,7 @@ class _Eyebrow extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFF8A3D),
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Color(0x99FF8A3D), blurRadius: 8)],
-            ),
+            decoration: const BoxDecoration(color: Color(0xFFFF6600)),
           ),
           const SizedBox(width: 8),
           Flexible(
@@ -365,10 +360,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
           transform: Matrix4.translationValues(0, _hover ? -2 : 0, 0),
           padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF7A1A), Color(0xFFFF4B3E)],
-            ),
+                color: _hover ? const Color(0xFFFF7A24) : const Color(0xFFFF6600),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFFF5A2A).withOpacity(_hover ? 0.5 : 0.32),
@@ -384,8 +376,8 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                 widget.label,
                 style: GoogleFonts.baloo2(
                   fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2A1A16),
                   height: 1.1,
                 ),
               ),
@@ -394,9 +386,9 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                 duration: const Duration(milliseconds: 180),
                 offset: Offset(_hover ? 0.2 : 0, 0),
                 child: const Icon(
-                  Icons.arrow_forward_rounded,
+                  Icons.arrow_forward,
                   size: 18,
-                  color: Colors.white,
+                  color: Color(0xFF2A1A16),
                 ),
               ),
             ],
@@ -432,8 +424,7 @@ class _GhostButtonState extends State<_GhostButton> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: fg.withOpacity(_hover ? 0.12 : 0.05),
+                color: fg.withOpacity(_hover ? 0.12 : 0.05),
             border: Border.all(color: fg.withOpacity(_hover ? 0.4 : 0.22)),
           ),
           child: Text(
