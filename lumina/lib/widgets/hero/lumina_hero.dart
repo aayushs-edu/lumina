@@ -299,13 +299,22 @@ class _PrimaryButton extends StatefulWidget {
 
 class _PrimaryButtonState extends State<_PrimaryButton> {
   bool _hover = false;
+  bool _focus = false;
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
+    return FocusableActionDetector(
+      mouseCursor: SystemMouseCursors.click,
+      onShowHoverHighlight: (v) => setState(() => _hover = v),
+      onShowFocusHighlight: (v) => setState(() => _focus = v),
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onTap();
+            return null;
+          },
+        ),
+      },
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
@@ -314,7 +323,11 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
           transform: Matrix4.translationValues(0, _hover ? -2 : 0, 0),
           padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
           decoration: BoxDecoration(
-                color: _hover ? const Color(0xFFFF7A24) : const Color(0xFFFF6600),
+            color: _hover ? const Color(0xFFFF7A24) : const Color(0xFFFF6600),
+            border: Border.all(
+              color: _focus ? const Color(0xFF2A1A16) : Colors.transparent,
+              width: 2,
+            ),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFFF5A2A).withOpacity(_hover ? 0.5 : 0.32),
@@ -364,22 +377,34 @@ class _GhostButton extends StatefulWidget {
 
 class _GhostButtonState extends State<_GhostButton> {
   bool _hover = false;
+  bool _focus = false;
 
   @override
   Widget build(BuildContext context) {
     const fg = Color(0xFF2A1A16);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
+    return FocusableActionDetector(
+      mouseCursor: SystemMouseCursors.click,
+      onShowHoverHighlight: (v) => setState(() => _hover = v),
+      onShowFocusHighlight: (v) => setState(() => _focus = v),
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onTap();
+            return null;
+          },
+        ),
+      },
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           decoration: BoxDecoration(
-                color: fg.withOpacity(_hover ? 0.12 : 0.05),
-            border: Border.all(color: fg.withOpacity(_hover ? 0.4 : 0.22)),
+            color: fg.withOpacity(_hover ? 0.12 : 0.05),
+            border: Border.all(
+              color: _focus ? fg : fg.withOpacity(_hover ? 0.4 : 0.22),
+              width: _focus ? 2 : 1,
+            ),
           ),
           child: Text(
             widget.label,

@@ -1,0 +1,511 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-23T18:53:52.068000+00:00",
+  "title": "Design System: lumina",
+  "extensions": {
+    "colorMeta": {
+      "orange": {
+        "role": "primary",
+        "displayName": "Lumina Orange",
+        "canonical": "oklch(69.6% 0.204 43.5)",
+        "tonalRamp": [
+          "#1F0100",
+          "#421200",
+          "#6B2804",
+          "#993D0B",
+          "#CD5101",
+          "#FA6E27",
+          "#FEAE8D",
+          "#FEEAE1"
+        ]
+      },
+      "orange-hover": {
+        "role": "primary",
+        "displayName": "Lit Orange",
+        "canonical": "oklch(72.4% 0.185 47.7)",
+        "tonalRamp": [
+          "#1E0100",
+          "#3F1600",
+          "#692A00",
+          "#974000",
+          "#C5590E",
+          "#F67216",
+          "#FCB089",
+          "#FFEADF"
+        ]
+      },
+      "orange-text": {
+        "role": "primary",
+        "displayName": "Burnt Orange Text",
+        "canonical": "oklch(54.8% 0.158 44.6)",
+        "tonalRamp": [
+          "#1E0100",
+          "#421300",
+          "#6A2903",
+          "#983E08",
+          "#C6571A",
+          "#EC7A42",
+          "#FDAF8C",
+          "#FEEAE1"
+        ]
+      },
+      "aurora-coral": {
+        "role": "secondary",
+        "displayName": "Aurora Coral",
+        "canonical": "oklch(66.9% 0.218 28.5)",
+        "tonalRamp": [
+          "#220000",
+          "#4A0202",
+          "#7A0A08",
+          "#AE1612",
+          "#E22A23",
+          "#FC6858",
+          "#FCADA1",
+          "#FFE9E5"
+        ]
+      },
+      "aurora-amber": {
+        "role": "secondary",
+        "displayName": "Aurora Amber",
+        "canonical": "oklch(79.0% 0.157 64.2)",
+        "tonalRamp": [
+          "#180600",
+          "#381C00",
+          "#5D3504",
+          "#854F0B",
+          "#B36901",
+          "#E08605",
+          "#FBB36B",
+          "#FFEBD9"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ember Ink",
+        "canonical": "oklch(23.7% 0.027 34.6)",
+        "tonalRamp": [
+          "#150705",
+          "#301F1B",
+          "#4D3B36",
+          "#6C5854",
+          "#8C7873",
+          "#AE9993",
+          "#D5BEB9",
+          "#FFE9E4"
+        ]
+      },
+      "ink-hover": {
+        "role": "neutral",
+        "displayName": "Ember Ink Hover",
+        "canonical": "oklch(33.2% 0.033 36.6)",
+        "tonalRamp": [
+          "#170603",
+          "#321E19",
+          "#4F3A34",
+          "#6F5751",
+          "#8F7770",
+          "#B29890",
+          "#D8BDB6",
+          "#FFE9E3"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Warm Umber",
+        "canonical": "oklch(41.7% 0.030 40.2)",
+        "tonalRamp": [
+          "#160703",
+          "#311F19",
+          "#4E3B34",
+          "#6D5851",
+          "#8E7870",
+          "#B09991",
+          "#D6BEB6",
+          "#FFE9E2"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "oklch(99.3% 0.004 56.4)",
+        "tonalRamp": [
+          "#0D0B09",
+          "#262322",
+          "#413F3E",
+          "#5F5D5B",
+          "#7F7D7B",
+          "#A09E9C",
+          "#C6C3C1",
+          "#F1EEEC"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Pure White",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#7D7D7D",
+          "#9E9E9E",
+          "#C4C4C4",
+          "#EEEEEE"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rose",
+        "canonical": "oklch(90.1% 0.021 53.2)",
+        "tonalRamp": [
+          "#120904",
+          "#2C211B",
+          "#493D36",
+          "#675B53",
+          "#887A72",
+          "#A99B93",
+          "#CFC1B8",
+          "#FAEBE2"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Cream",
+        "canonical": "oklch(96.6% 0.021 60.8)",
+        "tonalRamp": [
+          "#120904",
+          "#2C221A",
+          "#483D35",
+          "#675B52",
+          "#877B71",
+          "#A99C92",
+          "#CFC1B7",
+          "#FAECE1"
+        ]
+      },
+      "cream-soft": {
+        "role": "neutral",
+        "displayName": "Dusk Cream",
+        "canonical": "oklch(83.2% 0.031 52.6)",
+        "tonalRamp": [
+          "#150702",
+          "#302016",
+          "#4D3B31",
+          "#6C594E",
+          "#8D796D",
+          "#AF9A8D",
+          "#D5BFB2",
+          "#FFEADD"
+        ]
+      },
+      "hotspot-extreme": {
+        "role": "data",
+        "displayName": "Hotspot Extreme",
+        "canonical": "oklch(42.1% 0.193 328.4)",
+        "tonalRamp": [
+          "#1C001C",
+          "#3F013F",
+          "#6A0769",
+          "#932192",
+          "#B748B5",
+          "#DC6BD9",
+          "#FD9BF9",
+          "#FEE6FC"
+        ]
+      },
+      "hotspot-high": {
+        "role": "data",
+        "displayName": "Hotspot High",
+        "canonical": "oklch(62.8% 0.258 29.2)",
+        "tonalRamp": [
+          "#220000",
+          "#4A0201",
+          "#7A0B06",
+          "#AE160F",
+          "#E91009",
+          "#FC6857",
+          "#FCADA1",
+          "#FFE9E5"
+        ]
+      },
+      "hotspot-medium": {
+        "role": "data",
+        "displayName": "Hotspot Medium",
+        "canonical": "oklch(79.3% 0.171 70.7)",
+        "tonalRamp": [
+          "#170600",
+          "#351E00",
+          "#5A3700",
+          "#825200",
+          "#AA6F11",
+          "#D68C1A",
+          "#FFB24D",
+          "#FEEBD6"
+        ]
+      },
+      "hotspot-low": {
+        "role": "data",
+        "displayName": "Hotspot Low",
+        "canonical": "oklch(90.2% 0.188 101.2)",
+        "tonalRamp": [
+          "#0F0B00",
+          "#2A2400",
+          "#484003",
+          "#695F0A",
+          "#8D7F00",
+          "#B2A000",
+          "#DAC62F",
+          "#FFF195"
+        ]
+      },
+      "hotspot-none": {
+        "role": "data",
+        "displayName": "Hotspot No Data",
+        "canonical": "oklch(94.9% 0.000 89.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#7D7D7D",
+          "#9E9E9E",
+          "#C4C4C4",
+          "#EEEEEE"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The spotlight theme word on the orange field only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings; cream on ink in the closing band."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Quoted story titles, two lines max."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Story excerpts and closing copy, 620-680px max width."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Story metadata, legend, nav links, tooltip."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Square button labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating-layer",
+        "value": "0 6px 18px rgba(42,26,22,0.12)",
+        "purpose": "Atlas hover tooltip."
+      },
+      {
+        "name": "hero-cta",
+        "value": "0 8px 18px rgba(255,90,42,0.32)",
+        "purpose": "Hero primary button only; hover 0 8px 26px rgba(255,90,42,0.5) with a 2px lift."
+      }
+    ],
+    "motion": [
+      {
+        "name": "hover-color",
+        "value": "160ms ease-out",
+        "purpose": "Button background and story title colour on hover."
+      },
+      {
+        "name": "arrow-slide",
+        "value": "180ms cubic-bezier(0.33, 1, 0.68, 1)",
+        "purpose": "Button arrow nudge and story-entry arrow reveal."
+      },
+      {
+        "name": "scroll-to-section",
+        "value": "700ms cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Hero scroll cue to the spotlight."
+      },
+      {
+        "name": "hero-intro",
+        "value": "1800ms stagger, starts at 1400ms",
+        "purpose": "Hero headline entrance (hero only)."
+      },
+      {
+        "name": "hero-shimmer",
+        "value": "7s loop",
+        "purpose": "Wordmark shimmer through orange, amber, coral (hero only)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "600px"
+      },
+      {
+        "name": "nav-compact",
+        "value": "640px"
+      },
+      {
+        "name": "wide",
+        "value": "900px"
+      },
+      {
+        "name": "gutter-wide",
+        "value": "1100px"
+      },
+      {
+        "name": "content-max",
+        "value": "1200px"
+      }
+    ],
+    "auroraPalette": {
+      "blobs": [
+        "#FFB38A",
+        "#FF8A65",
+        "#FFC857",
+        "#FF9DB0",
+        "#FFD6A5"
+      ],
+      "ribbons": [
+        "#FF7A59",
+        "#FFB347",
+        "#FF8FA3",
+        "#FFC46B",
+        "#FF6F61"
+      ],
+      "ground": [
+        "#FFF1E6",
+        "#FFF7F1",
+        "#FFFFFF"
+      ],
+      "scrollCue": "#7A4A3A",
+      "note": "Hero background painter only."
+    }
+  },
+  "components": [
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Square action on the orange field (View Stories).",
+      "html": "<button class=\"ds-btn-ink\">View Stories <span class=\"ds-arrow\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z\"/></svg></span></button>",
+      "css": ".ds-btn-ink{font-family:'Baloo 2',sans-serif;display:inline-flex;align-items:center;gap:12px;background:#2A1A16;color:#FFF1E6;padding:16px 26px;font-size:18px;font-weight:700;line-height:1.1;border:2px solid transparent;border-radius:0;cursor:pointer;transition:background .16s ease-out}.ds-btn-ink .ds-arrow{display:inline-flex;transition:transform .18s cubic-bezier(.33,1,.68,1)}.ds-btn-ink:hover{background:#45302A}.ds-btn-ink:hover .ds-arrow{transform:translateX(5px)}.ds-btn-ink:focus-visible{outline:none;border-color:#FFF1E6}"
+    },
+    {
+      "name": "Orange Button",
+      "kind": "button",
+      "refersTo": "button-orange",
+      "description": "Square action on the ink band (Share Your Story).",
+      "html": "<div style=\"background:#2A1A16;padding:24px;display:inline-block\"><button class=\"ds-btn-orange\">Share Your Story <span class=\"ds-arrow\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z\"/></svg></span></button></div>",
+      "css": ".ds-btn-orange{font-family:'Baloo 2',sans-serif;display:inline-flex;align-items:center;gap:12px;background:#FF6600;color:#2A1A16;padding:16px 26px;font-size:18px;font-weight:700;line-height:1.1;border:2px solid transparent;border-radius:0;cursor:pointer;transition:background .16s ease-out}.ds-btn-orange .ds-arrow{display:inline-flex;transition:transform .18s cubic-bezier(.33,1,.68,1)}.ds-btn-orange:hover{background:#FF7A24}.ds-btn-orange:hover .ds-arrow{transform:translateX(5px)}.ds-btn-orange:focus-visible{outline:none;border-color:#2A1A16}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "nav-links-bar",
+      "description": "Orange wordmark and the square white links bar.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-mark\" href=\"#\">lumina</a><div class=\"ds-nav-links\"><a href=\"#\" class=\"ds-nav-link\">Explore</a><a href=\"#\" class=\"ds-nav-link ds-active\">Post a Story</a><a href=\"#\" class=\"ds-nav-link\">LuminaLens</a></div></nav>",
+      "css": ".ds-nav{font-family:'Baloo 2',sans-serif;display:flex;align-items:center;gap:32px;background:rgba(255,252,250,.95);padding:16px}.ds-nav-mark{font-size:22px;font-weight:800;color:#FF6600;text-decoration:none}.ds-nav-links{display:flex;background:#FFFFFF;border:1px solid #EADBD2;padding:4px 8px;border-radius:0}.ds-nav-link{padding:6px 14px;font-size:15px;font-weight:600;line-height:1.2;color:#2A1A16;text-decoration:none;border-bottom:2px solid transparent}.ds-nav-link:hover,.ds-nav-link.ds-active{color:#FF6600}.ds-nav-link.ds-active{border-bottom-color:#FF6600}.ds-nav-link:focus-visible{outline:none;border-bottom-color:#2A1A16}"
+    },
+    {
+      "name": "Story Entry",
+      "kind": "custom",
+      "refersTo": "story-entry",
+      "description": "An excerpt divided by a hairline: quoted title, three-line excerpt, country and likes.",
+      "html": "<a href=\"#\" class=\"ds-story\"><span class=\"ds-story-title\">“Use your science words,” he said.</span><span class=\"ds-story-text\">During the first day of high school physics, my teacher was asking basic questions to get a feel for our general physics knowledge.</span><span class=\"ds-story-meta\"><b>United States</b> &#9829; 200</span></a>",
+      "css": ".ds-story{font-family:'Baloo 2',sans-serif;display:block;max-width:720px;background:#FFFCFA;border-top:1px solid #EADBD2;padding:24px 0;text-decoration:none;outline:2px solid transparent}.ds-story-title{display:block;font-size:26px;font-weight:700;line-height:1.2;color:#2A1A16;transition:color .16s}.ds-story-text{display:block;margin-top:8px;max-width:680px;font-size:18px;line-height:1.55;color:#5B4740}.ds-story-meta{display:block;margin-top:12px;font-size:15px;font-weight:600;color:#5B4740}.ds-story-meta b{color:#B84A00;margin-right:16px}.ds-story:hover .ds-story-title{color:#B84A00}.ds-story:focus-visible{outline-color:#2A1A16}"
+    },
+    {
+      "name": "Theme Tag",
+      "kind": "chip",
+      "refersTo": "theme-tag",
+      "description": "Square cream theme tag.",
+      "html": "<span class=\"ds-tag\">Domestic</span>",
+      "css": ".ds-tag{font-family:'Baloo 2',sans-serif;display:inline-block;background:#FFF1E6;border:1px solid #EADBD2;color:#2A1A16;padding:3px 8px;font-size:13px;font-weight:600;border-radius:0}"
+    },
+    {
+      "name": "Spotlight Field",
+      "kind": "card",
+      "refersTo": "button-ink",
+      "description": "Flat orange block with the theme word at display size.",
+      "html": "<div class=\"ds-spot\"><div class=\"ds-spot-h\">Today's Spotlight</div><div class=\"ds-spot-word\">Education</div></div>",
+      "css": ".ds-spot{font-family:'Baloo 2',sans-serif;background:#FF6600;color:#2A1A16;padding:48px 40px;border-radius:0}.ds-spot-h{font-size:40px;font-weight:700;line-height:1.1;letter-spacing:-.8px}.ds-spot-word{margin-top:12px;font-size:64px;font-weight:800;line-height:1;letter-spacing:-1.5px}"
+    },
+    {
+      "name": "Atlas Tooltip",
+      "kind": "custom",
+      "refersTo": "atlas-tooltip",
+      "description": "Floating country summary on map hover; the only resting-page shadow.",
+      "html": "<div class=\"ds-tip\"><div class=\"ds-tip-h\">India</div><div>GII Score: 0.437</div><div class=\"ds-tip-l\"><i></i>Level: Extreme</div></div>",
+      "css": ".ds-tip{font-family:'Baloo 2',sans-serif;max-width:240px;background:#FFFFFF;border:1px solid #EADBD2;box-shadow:0 6px 18px rgba(42,26,22,.12);padding:12px 14px;font-size:13px;color:#5B4740;border-radius:0}.ds-tip-h{font-size:17px;font-weight:700;line-height:1.15;color:#2A1A16;margin-bottom:4px}.ds-tip-l{display:flex;align-items:center;gap:6px;font-weight:600;color:#2A1A16}.ds-tip-l i{width:9px;height:9px;background:#800080;display:inline-block}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Reading Room After the Aurora",
+    "overview": "The home page opens on the animated Aurora: soft pools of peach, coral, amber and rose light on a cream-to-white ground, with the lowercase wordmark set huge. Below it, that warm light settles into flat fields of colour. Brand orange is a solid block, warm white is the reading ground, and deep ink closes the page with cream text. Nothing below the hero glows, floats or slides on its own. The page is a reading room, not a dashboard: stories are excerpts divided by hairlines, the atlas sits in a single square frame, and emphasis comes from weight and size in one typeface.\n\nThe density is calm and editorial. Sections use generous vertical padding (112-120px wide, 64-72px narrow) and one horizontal gutter that steps with width. Every corner is square: buttons, tags, the nav links bar, the atlas frame, the tooltip and the country dialog. Depth is tonal. Only layers that genuinely float above the page (the atlas tooltip, the hero's primary call to action) cast a shadow, and that shadow has a real downward offset.\n\nThe subject is people's lived harm, so the system stays warm and serious. Colour carries warmth; it is never used to decorate data or to make the page feel playful.",
+    "keyCharacteristics": [
+      "Flat colour fields below the hero: orange block, warm-white reading ground, ink closing band.",
+      "Baloo 2 is the only typeface; hierarchy comes from weight (400-800) and size.",
+      "Square corners everywhere (0px).",
+      "1px warm hairlines (rule) separate content instead of cards.",
+      "The Aurora hero is the only animated, gradient-lit surface."
+    ],
+    "rules": [
+      {
+        "name": "The Flat Field Rule",
+        "body": "Below the hero, colour arrives as solid blocks (orange, paper, ink). No gradients, no glows, no tinted overlays.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Orange Rule",
+        "body": "Lumina Orange is a field or fill, or it sits on ink. On paper or white, orange text uses Burnt Orange Text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Raised Is White Rule",
+        "body": "The ground is Warm Paper; anything floating above it (nav bar, tooltip, dialog) is Pure White with a Hairline Rose border.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "Baloo 2 is the only typeface. Emphasis comes from weight and size, never from a second family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Solid Ink Heading Rule",
+        "body": "Headings are solid colour: ink on light grounds, cream on ink, with \"lumina\" picked out in orange. The hero wordmark's shimmer belongs to that wordmark alone.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Sections, story entries, buttons below the hero, tags and frames have no shadow. A shadow means the element floats above the page.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Corner Rule",
+        "body": "No border radius anywhere on the home page. Any new component starts at 0px.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** set colour as flat fields: orange (#FF6600) blocks, Warm Paper (#FFFCFA) reading grounds, Ember Ink (#2A1A16) bands with cream (#FFF1E6) text.",
+      "**Do** use Burnt Orange Text (#B84A00) for any orange text on paper or white.",
+      "**Do** separate content with 1px Hairline Rose (#EADBD2) rules instead of cards.",
+      "**Do** keep every corner at 0px, including dialogs, tooltips and tags.",
+      "**Do** give every interactive element a hover state and a 2px square keyboard focus treatment, as the square buttons, story entries and nav links have.",
+      "**Do** step the gutter 20 / 40 / 64px at 600 / 1100px, and cap content at 1200px."
+    ],
+    "donts": [
+      "**Don't** add a border radius anywhere on the home page.",
+      "**Don't** use gradient or glowing text outside the hero wordmark.",
+      "**Don't** use a typeface other than Baloo 2.",
+      "**Don't** put shadows on resting surfaces. A shadow is only for a floating layer and always has a downward offset.",
+      "**Don't** use the hotspot data colours for UI, brand or decoration.",
+      "**Don't** reuse the Aurora's light, ribbons or shimmer outside the hero."
+    ]
+  }
+}

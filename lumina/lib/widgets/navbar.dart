@@ -7,6 +7,7 @@ class LuminaNavbar extends StatelessWidget {
   const LuminaNavbar({Key? key, this.currentPage = ''}) : super(key: key);
 
   static const _orange = Color(0xFFFF6600);
+  static const _orangeText = Color(0xFFB84A00);
   static const _ink = Color(0xFF2A1A16);
   static const _rule = Color(0xFFEADBD2);
 
@@ -116,10 +117,14 @@ class _NavLinkState extends State<_NavLink> {
 
   @override
   Widget build(BuildContext context) {
+    // The wordmark is the logo in brand orange; link text uses the darker
+    // orange that holds 4.5:1 on white.
     final color =
-        widget.wordmark || widget.active || _hover
+        widget.wordmark
             ? LuminaNavbar._orange
-            : LuminaNavbar._ink;
+            : (widget.active || _hover
+                ? LuminaNavbar._orangeText
+                : LuminaNavbar._ink);
     return FocusableActionDetector(
       mouseCursor: SystemMouseCursors.click,
       onShowHoverHighlight: (v) => setState(() => _hover = v),
@@ -144,7 +149,7 @@ class _NavLinkState extends State<_NavLink> {
               bottom: BorderSide(
                 color:
                     widget.active
-                        ? LuminaNavbar._orange
+                        ? LuminaNavbar._orangeText
                         : (_focus ? LuminaNavbar._ink : Colors.transparent),
                 width: 2,
               ),
