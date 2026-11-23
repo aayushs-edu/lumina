@@ -120,7 +120,6 @@ class _LuminaHeroState extends State<LuminaHero> with TickerProviderStateMixin {
     final narrow = size.width < 600;
 
     const ink = Color(0xFF2A1A16);
-    const soft = Color(0xFF5B4740);
 
     return SizedBox(
       height: height,
@@ -150,11 +149,6 @@ class _LuminaHeroState extends State<LuminaHero> with TickerProviderStateMixin {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _stagger(
-                          from: 0.0,
-                          child: _Eyebrow(color: soft, compact: narrow),
-                        ),
-                        SizedBox(height: narrow ? 12 : 8),
                         _stagger(
                           from: 0.08,
                           child: AnimatedBuilder(
@@ -289,46 +283,6 @@ class _LuminaHeroState extends State<LuminaHero> with TickerProviderStateMixin {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Eyebrow extends StatelessWidget {
-  const _Eyebrow({required this.color, this.compact = false});
-  final Color color;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
-        border: Border.all(color: const Color(0xFFFF6600).withOpacity(0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(color: Color(0xFFFF6600)),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              'ANONYMOUS STORIES OF EVERYDAY INEQUALITY',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: compact ? 10 : 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: compact ? 0.9 : 1.6,
-                color: color,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

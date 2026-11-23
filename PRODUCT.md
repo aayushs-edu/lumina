@@ -36,7 +36,7 @@ Anonymous first-person stories placed next to the structural data that explains 
 
 ## Brand Commitments
 
-- Name written lowercase: "lumina". Tagline: "illuminating hidden inequalities". Hero eyebrow: "Anonymous stories of everyday inequality".
+- Name written lowercase: "lumina". Tagline: "illuminating hidden inequalities". (The hero's "Anonymous stories of everyday inequality" tag was removed at the user's request, 2026-11-23.)
 - Typeface: Baloo 2. Primary orange #FF6600 with amber and coral (the hero's Aurora palette).
 - Hero: the animated Aurora background and its layout are approved and stay.
 - No rounded corners on the home page: cards, buttons, tags and the navbar are square-cornered.

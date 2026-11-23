@@ -23,6 +23,6 @@ STORY: Today's theme names what to read; three top stories read as excerpts; the
 
 FIRST VIEWPORT: (below hero) Full-bleed split: left 40% orange field with "Today's Spotlight", the theme word at display size in ink, and a square ink "View Stories" button; right, "Top Stories" with three excerpt entries (quoted title, three-line excerpt, country and likes) divided by hairlines. Stacks on mobile.
 
-FORM: Extension of the established hero world; no concept roll (surface inherits its world). Seed key: none (extension, concept-seed not run).
+FORM: Extension of the established hero world; no concept roll (surface inherits its world). Seed key: none. User waiver, 2026-11-23, answering whether to skip the alternative-directions roll: "Yes, skip it (Recommended)".
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
