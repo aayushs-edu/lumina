@@ -6,6 +6,7 @@ import 'package:lumina/widgets/theme_tag.dart';
 import 'widgets/navbar.dart';
 import 'services/algolia_service.dart';
 import 'models/story_model.dart';
+import 'models/story_themes.dart';
 
 class NoScrollbarBehavior extends ScrollBehavior {
   @override
@@ -58,39 +59,15 @@ class _ExplorePageState extends State<ExplorePage> {
     });
   }
   
+  // Same daily theme as the home page's spotlight (lib/models/story_themes.dart),
+  // so "View Stories" lands on the theme the visitor just saw.
   Future<void> _loadSpotlightTheme() async {
-    try {
-      List<Map<String, dynamic>> storiesData = await FirebaseService.getAllStories();
-      Set<String> themesSet = {};
-      for (var story in storiesData) {
-        if (story.containsKey('themes')) {
-          for (var t in story['themes']) {
-            themesSet.add(t.toString());
-          }
-        }
-      }
-      List<String> themes = themesSet.toList();
-      if (themes.isNotEmpty) {
-        int index = DateTime.now().day % themes.length;
-        setState(() {
-          currentSpotlight = themes[index];
-          selectedThemes = [currentSpotlight];
-        });
-      } else {
-        setState(() {
-          currentSpotlight = 'Workplace'; // fallback if no themes found
-          selectedThemes = [currentSpotlight];
-        });
-      }
-    } catch (e) {
-      print('Error retrieving spotlight theme: $e');
-      setState(() {
-        currentSpotlight = 'Workplace';
-        selectedThemes = [currentSpotlight];
-      });
-    }
+    setState(() {
+      currentSpotlight = spotlightThemeFor(DateTime.now());
+      selectedThemes = [currentSpotlight];
+    });
   }
-  
+
   Future<void> _loadStories() async {
     setState(() {
       isLoading = true;
